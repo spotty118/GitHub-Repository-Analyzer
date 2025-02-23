@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -292,7 +291,7 @@ Format these as clear, actionable directives that any AI system can follow when 
           GitHub Repository Analyzer
         </h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Input Panel */}
           <Card className="p-6 animate-fade-in">
             <div className="flex flex-col gap-4">
@@ -413,7 +412,7 @@ Format these as clear, actionable directives that any AI system can follow when 
 
           {/* Results Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="flex flex-col h-full space-y-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Analysis Results</h2>
                 <div className="flex space-x-2">
@@ -438,11 +437,11 @@ Format these as clear, actionable directives that any AI system can follow when 
                 </div>
               </div>
               
-              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="bg-muted p-4 rounded-lg min-h-[400px] font-mono text-sm overflow-auto">
                 {isLoading ? (
                   <p className="text-muted-foreground">Analyzing repository...</p>
                 ) : analysis ? (
-                  <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed">{analysis}</pre>
+                  <pre className="whitespace-pre-wrap">{analysis}</pre>
                 ) : (
                   <p className="text-muted-foreground">
                     Analysis results will appear here...
@@ -454,19 +453,19 @@ Format these as clear, actionable directives that any AI system can follow when 
         </div>
 
         {/* File Structure and Custom Instructions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* File Structure Panel */}
-          <Card className="p-6 animate-fade-in h-full">
-            <div className="flex flex-col h-full space-y-4">
+          <Card className="p-6 animate-fade-in">
+            <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <FolderTree className="w-5 h-5 text-mint" />
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
-              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
                 {isLoading ? (
                   <p className="text-muted-foreground">Loading repository structure...</p>
                 ) : fileStructure ? (
-                  <pre className="whitespace-pre text-sm leading-relaxed">{fileStructure}</pre>
+                  <pre className="whitespace-pre">{fileStructure}</pre>
                 ) : (
                   <p className="text-muted-foreground">
                     Repository structure will appear here...
@@ -477,8 +476,8 @@ Format these as clear, actionable directives that any AI system can follow when 
           </Card>
 
           {/* Generated Custom Instructions Panel */}
-          <Card className="p-6 animate-fade-in h-full">
-            <div className="flex flex-col h-full space-y-4">
+          <Card className="p-6 animate-fade-in">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-mint" />
@@ -504,11 +503,11 @@ Format these as clear, actionable directives that any AI system can follow when 
                   </Button>
                 </div>
               </div>
-              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
                 {isLoading ? (
                   <p className="text-muted-foreground">Generating custom instructions...</p>
                 ) : customInstructions ? (
-                  <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed">{customInstructions}</pre>
+                  <pre className="whitespace-pre-wrap">{customInstructions}</pre>
                 ) : (
                   <p className="text-muted-foreground">
                     AI-generated custom instructions will appear here...
