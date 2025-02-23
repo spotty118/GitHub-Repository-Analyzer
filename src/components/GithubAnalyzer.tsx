@@ -175,7 +175,7 @@ Please provide a detailed analysis including:
       const analysisText = analysisData.choices[0].message.content;
       setAnalysis(analysisText);
 
-      // Second request: Generate core app information
+      // Second request: Generate focused context reinforcement
       const instructionsResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -187,25 +187,22 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Create a concise summary focusing only on what this application is and what it does. Include its core purpose, main features, and key functionality.",
+              content: "Create a concise internal context summary that defines what this application is, focusing on its identity and purpose. This will be used to maintain consistent understanding of the application's core nature across interactions.",
             },
             {
               role: 'user',
-              content: `Based on this repository structure and analysis, create a core application summary:
+              content: `Based on this repository analysis, create a core identity definition:
 
 Repository: ${owner}/${repo}
 
-File Structure:
-${structure}
-
-Analysis:
+Analysis Summary:
 ${analysisText}
 
-Please describe:
-1. What this application is
-2. Its main purpose
-3. Key features and functionality
-4. Core technical components`,
+Create a focused definition that captures:
+1. The application's fundamental identity
+2. Its primary purpose and goals
+3. Key operational characteristics
+4. Essential technical context`,
             },
           ],
         }),
