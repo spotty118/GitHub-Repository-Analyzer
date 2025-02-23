@@ -60,7 +60,7 @@
   }
 
   .card {
-    @apply backdrop-blur-sm bg-white/90 dark:bg-black/80 shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply backdrop-blur-sm bg-white/95 dark:bg-black/90 shadow-sm hover:shadow-md transition-all duration-300 border border-border/50;
   }
 
   input, textarea, button {
@@ -68,11 +68,25 @@
   }
 
   input:focus, textarea:focus {
-    @apply ring-2 ring-mint/30;
+    @apply ring-2 ring-mint/30 outline-none;
   }
 
   button:active {
     @apply scale-95;
+  }
+
+  pre {
+    @apply font-mono text-sm leading-relaxed;
+  }
+
+  h1, h2, h3 {
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/50 backdrop-blur-xl border border-border/50;
   }
 }
 
