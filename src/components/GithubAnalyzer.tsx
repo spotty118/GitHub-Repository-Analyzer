@@ -413,7 +413,7 @@ Format these as clear, actionable directives that any AI system can follow when 
 
           {/* Results Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="space-y-4 h-full">
+            <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Analysis Results</h2>
                 <div className="flex space-x-2">
@@ -438,7 +438,7 @@ Format these as clear, actionable directives that any AI system can follow when 
                 </div>
               </div>
               
-              <div className="bg-muted p-4 rounded-lg h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Analyzing repository...</p>
                 ) : analysis ? (
@@ -457,12 +457,12 @@ Format these as clear, actionable directives that any AI system can follow when 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* File Structure Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="space-y-4">
+            <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center space-x-2">
                 <FolderTree className="w-5 h-5 text-mint" />
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
-              <div className="bg-muted p-4 rounded-lg h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Loading repository structure...</p>
                 ) : fileStructure ? (
@@ -478,7 +478,7 @@ Format these as clear, actionable directives that any AI system can follow when 
 
           {/* Generated Custom Instructions Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="space-y-4">
+            <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-mint" />
@@ -504,7 +504,7 @@ Format these as clear, actionable directives that any AI system can follow when 
                   </Button>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-lg h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
+              <div className="flex-1 bg-muted p-4 rounded-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Generating custom instructions...</p>
                 ) : customInstructions ? (
