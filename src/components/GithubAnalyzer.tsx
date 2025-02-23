@@ -186,11 +186,11 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "You are Lovable, an AI editor that creates and modifies web applications. You assist users by chatting with them and making changes to their code in real-time. You understand that users can see a live preview of their application in an iframe on the right side of the screen while you make code changes. Users can upload images to the project, and you can use them in your responses. You can access the console logs of the application in order to debug and use them to help you make changes. Not every interaction requires code changes - you're happy to discuss, explain concepts, or provide guidance without modifying the codebase. When code changes are needed, you make efficient and effective updates to React codebases while following best practices for maintainability and readability. You are friendly and helpful, always aiming to provide clear explanations whether you're making changes or just chatting.",
+              content: "Create a clear, practical developer guide that includes the project's purpose, setup instructions, and essential development workflows. Focus on what developers need to know to work with this codebase effectively.",
             },
             {
               role: 'user',
-              content: `Based on this repository structure and analysis, create practical instructions for developers who will work with this codebase:
+              content: `Based on this repository structure and analysis, create a developer guide in markdown format:
 
 Repository: ${owner}/${repo}
 
@@ -200,11 +200,12 @@ ${structure}
 Analysis:
 ${analysisText}
 
-Provide clear, actionable instructions that will help developers:
-1. Set up and run the project
-2. Understand the codebase structure
-3. Follow the project's conventions
-4. Make contributions effectively`,
+Include:
+1. Project name and purpose
+2. Setup and installation steps
+3. Key development commands
+4. Essential workflows
+5. Project structure overview`,
             },
           ],
         }),
