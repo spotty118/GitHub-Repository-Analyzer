@@ -56,11 +56,11 @@
   }
   
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased min-h-screen;
   }
 
   .card {
-    @apply backdrop-blur-sm bg-white/95 dark:bg-black/90 shadow-sm hover:shadow-md transition-all duration-300 border border-border/50;
+    @apply backdrop-blur-sm bg-white/95 dark:bg-black/90 shadow-sm hover:shadow-md transition-all duration-300 border border-border/50 rounded-xl;
   }
 
   input, textarea, button {
@@ -76,17 +76,26 @@
   }
 
   pre {
-    @apply font-mono text-sm leading-relaxed;
+    @apply font-mono text-sm leading-relaxed text-foreground/90;
   }
 
   h1, h2, h3 {
-    @apply tracking-tight;
+    @apply tracking-tight font-medium;
   }
 }
 
 @layer utilities {
   .glass {
     @apply bg-background/50 backdrop-blur-xl border border-border/50;
+  }
+
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
   }
 }
 
