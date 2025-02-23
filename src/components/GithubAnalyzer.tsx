@@ -187,22 +187,20 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Create a concise internal context summary that defines what this application is, focusing on its identity and purpose. This will be used to maintain consistent understanding of the application's core nature across interactions.",
+              content: "Based on the codebase analysis, create a concise context summary that focuses purely on functionality and technical characteristics, ignoring repository naming.",
             },
             {
               role: 'user',
-              content: `Based on this repository analysis, create a core identity definition:
-
-Repository: ${owner}/${repo}
+              content: `Based on the codebase analysis, summarize the core technical aspects:
 
 Analysis Summary:
 ${analysisText}
 
-Create a focused definition that captures:
-1. The application's fundamental identity
-2. Its primary purpose and goals
-3. Key operational characteristics
-4. Essential technical context`,
+Focus on:
+1. Core functionality and features
+2. Technical architecture
+3. Key components and their interactions
+4. Main user workflows`,
             },
           ],
         }),
