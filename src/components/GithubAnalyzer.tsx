@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -137,6 +136,9 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
+      const selectedModelValue = useModelOverride ? selectedModel : 'openrouter/auto';
+      console.log('Using model:', selectedModelValue); // Debug log
+
       const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -144,7 +146,7 @@ export const GithubAnalyzer = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: useModelOverride ? selectedModel : 'openrouter/auto',
+          model: selectedModelValue,
           messages: [
             {
               role: 'system',
@@ -185,7 +187,7 @@ Please provide a detailed analysis including:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: useModelOverride ? selectedModel : 'openrouter/auto',
+          model: selectedModelValue,
           messages: [
             {
               role: 'system',
@@ -336,7 +338,10 @@ Format these as clear, actionable directives that any AI system can follow when 
                       <Switch
                         id="model-override"
                         checked={useModelOverride}
-                        onCheckedChange={setUseModelOverride}
+                        onCheckedChange={(checked) => {
+                          setUseModelOverride(checked);
+                          console.log('Model override changed:', checked); // Debug log
+                        }}
                       />
                       <Label htmlFor="model-override">Use Model Override</Label>
                     </div>
@@ -344,7 +349,10 @@ Format these as clear, actionable directives that any AI system can follow when 
                     {useModelOverride && (
                       <Select
                         value={selectedModel}
-                        onValueChange={setSelectedModel}
+                        onValueChange={(value) => {
+                          setSelectedModel(value);
+                          console.log('Selected model:', value); // Debug log
+                        }}
                       >
                         <SelectTrigger className="w-[300px]">
                           <SelectValue placeholder="Select a model" />
