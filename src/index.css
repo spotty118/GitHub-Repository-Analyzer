@@ -60,7 +60,7 @@
   }
 
   .card {
-    @apply backdrop-blur-sm bg-white/95 dark:bg-black/90 shadow-sm hover:shadow-md transition-all duration-300 border border-border/50 rounded-xl;
+    @apply backdrop-blur-sm bg-white/95 dark:bg-black/90 shadow-lg hover:shadow-xl transition-all duration-300 border border-border/50 rounded-xl;
   }
 
   input, textarea, button {
@@ -96,6 +96,10 @@
   
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
+  }
+
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-mint via-mint/90 to-mint/70 bg-clip-text text-transparent;
   }
 }
 
