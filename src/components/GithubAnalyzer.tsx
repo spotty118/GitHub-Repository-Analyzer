@@ -235,8 +235,8 @@ After the analysis, provide custom instructions that could help developers under
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Input Panel */}
-          <Card className="p-6 animate-fade-in h-full">
-            <div className="space-y-6 h-full flex flex-col">
+          <Card className="p-6 animate-fade-in">
+            <div className="flex flex-col gap-4">
               {/* API Key Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
@@ -302,7 +302,7 @@ After the analysis, provide custom instructions that could help developers under
               </div>
 
               {/* Repository Input Section */}
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Github className="w-5 h-5 text-mint" />
                   <h2 className="text-xl font-semibold">Repository Input</h2>
