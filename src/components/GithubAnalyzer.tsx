@@ -413,7 +413,7 @@ Format these as clear, actionable directives that any AI system can follow when 
 
           {/* Results Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="space-y-4">
+            <div className="space-y-4 h-full">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Analysis Results</h2>
                 <div className="flex space-x-2">
@@ -438,7 +438,7 @@ Format these as clear, actionable directives that any AI system can follow when 
                 </div>
               </div>
               
-              <div className="bg-muted p-4 rounded-lg min-h-[400px] overflow-auto prose prose-sm max-w-none">
+              <div className="bg-muted p-4 rounded-lg h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Analyzing repository...</p>
                 ) : analysis ? (
@@ -462,7 +462,7 @@ Format these as clear, actionable directives that any AI system can follow when 
                 <FolderTree className="w-5 h-5 text-mint" />
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
-              <div className="bg-muted p-4 rounded-lg min-h-[300px] overflow-auto">
+              <div className="bg-muted p-4 rounded-lg h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Loading repository structure...</p>
                 ) : fileStructure ? (
@@ -504,7 +504,7 @@ Format these as clear, actionable directives that any AI system can follow when 
                   </Button>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-lg min-h-[300px] overflow-auto prose prose-sm max-w-none">
+              <div className="bg-muted p-4 rounded-lg h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 transition-colors">
                 {isLoading ? (
                   <p className="text-muted-foreground">Generating custom instructions...</p>
                 ) : customInstructions ? (
