@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Github, FolderTree, Copy, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Github, FolderTree, Copy, Download, Key } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,56 @@ import { useToast } from "@/hooks/use-toast";
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysis, setAnalysis] = useState<string>("");
+  const [apiKey, setApiKey] = useState("");
+  const [isKeySet, setIsKeySet] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const savedKey = localStorage.getItem("openrouter_key");
+    if (savedKey) {
+      setApiKey(savedKey);
+      setIsKeySet(true);
+    }
+  }, []);
+
+  const handleSaveKey = () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid OpenRouter API key",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    localStorage.setItem("openrouter_key", apiKey);
+    setIsKeySet(true);
+    toast({
+      title: "Success",
+      description: "API key saved successfully",
+    });
+  };
+
+  const handleRemoveKey = () => {
+    localStorage.removeItem("openrouter_key");
+    setApiKey("");
+    setIsKeySet(false);
+    toast({
+      title: "Removed",
+      description: "API key removed successfully",
+    });
+  };
+
   const handleAnalyze = async () => {
+    if (!isKeySet) {
+      toast({
+        title: "Error",
+        description: "Please set your OpenRouter API key first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!repoUrl) {
       toast({
         title: "Error",
@@ -75,32 +122,73 @@ export const GithubAnalyzer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Input Panel */}
           <Card className="p-6 animate-fade-in">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Github className="w-5 h-5 text-mint" />
-                <h2 className="text-xl font-semibold">Repository Input</h2>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Enter GitHub repository URL"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={handleAnalyze} className="bg-mint hover:bg-mint-light text-white">
-                  Analyze
-                </Button>
-              </div>
-              
-              <div className="mt-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <FolderTree className="w-5 h-5 text-mint" />
-                  <h3 className="text-lg font-medium">File Structure</h3>
+            <div className="space-y-6">
+              {/* API Key Section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Key className="w-5 h-5 text-mint" />
+                  <h2 className="text-xl font-semibold">API Key Configuration</h2>
                 </div>
-                <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm">
-                  {/* File tree will be displayed here */}
-                  <p className="text-muted-foreground">Repository structure will appear here...</p>
+                
+                <div className="flex space-x-2">
+                  <Input
+                    type="password"
+                    placeholder="Enter OpenRouter API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="flex-1"
+                  />
+                  {!isKeySet ? (
+                    <Button 
+                      onClick={handleSaveKey}
+                      className="bg-mint hover:bg-mint-light text-white"
+                    >
+                      Save Key
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleRemoveKey}
+                      variant="outline"
+                      className="hover:text-destructive"
+                    >
+                      Remove Key
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Repository Input Section */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center space-x-2">
+                  <Github className="w-5 h-5 text-mint" />
+                  <h2 className="text-xl font-semibold">Repository Input</h2>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Enter GitHub repository URL"
+                    value={repoUrl}
+                    onChange={(e) => setRepoUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleAnalyze} 
+                    className="bg-mint hover:bg-mint-light text-white"
+                    disabled={!isKeySet}
+                  >
+                    Analyze
+                  </Button>
+                </div>
+                
+                <div className="mt-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <FolderTree className="w-5 h-5 text-mint" />
+                    <h3 className="text-lg font-medium">File Structure</h3>
+                  </div>
+                  <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm">
+                    {/* File tree will be displayed here */}
+                    <p className="text-muted-foreground">Repository structure will appear here...</p>
+                  </div>
                 </div>
               </div>
             </div>
