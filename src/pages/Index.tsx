@@ -3,10 +3,10 @@ import { GithubAnalyzer } from "@/components/GithubAnalyzer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/10">
-      <div className="container py-8 px-4 md:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5">
+      <div className="container py-8 animate-fade-in">
         <div className="relative">
-          <div className="absolute inset-0 bg-mint/5 blur-3xl rounded-full transform -translate-y-1/2"></div>
+          <div className="absolute inset-0 bg-mint/5 -z-10 blur-3xl rounded-[50%] h-32"></div>
           <GithubAnalyzer />
         </div>
       </div>
