@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Github, FolderTree, Copy, Download, Key, MessageSquare } from "lucide-react";
+import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoCircle } from "lucide-react";
 
 const OPENROUTER_MODELS = [
   { value: "openai/gpt-4o-2024-08-06", label: "GPT-4 Turbo (Aug 2024)" },
@@ -342,14 +341,13 @@ Format the instructions as clear directives that will guide future AI interactio
                   
                   {useModelOverride && (
                     <Alert>
-                      <InfoCircle className="h-4 w-4" />
+                      <Info className="h-4 w-4" />
                       <AlertDescription>
                         Different models have varying capabilities, response times, and costs. If analysis seems slow, the selected model might have longer processing times. Faster models may provide less detailed analysis.
                       </AlertDescription>
                     </Alert>
                   )}
                 </div>
-
               </div>
 
               {/* AI Role Section */}
