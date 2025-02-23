@@ -11,6 +11,7 @@ export const GithubAnalyzer = () => {
   const [analysis, setAnalysis] = useState<string>("");
   const [apiKey, setApiKey] = useState("");
   const [isKeySet, setIsKeySet] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -20,6 +21,22 @@ export const GithubAnalyzer = () => {
       setIsKeySet(true);
     }
   }, []);
+
+  const extractRepoInfo = (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2) {
+        return {
+          owner: pathParts[0],
+          repo: pathParts[1],
+        };
+      }
+      throw new Error("Invalid repository URL format");
+    } catch (error) {
+      throw new Error("Please enter a valid GitHub repository URL");
+    }
+  };
 
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,19 +87,73 @@ export const GithubAnalyzer = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
-      // TODO: Implement actual GitHub API integration
-      setAnalysis("Analysis in progress...");
+      // Extract owner and repo from URL
+      const { owner, repo } = extractRepoInfo(repoUrl);
+
+      // Fetch repository data from GitHub API
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch repository data");
+      }
+      const data = await response.json();
+
+      // Create a structured representation of the repository
+      const fileStructure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
+
+      // Prepare prompt for AI analysis
+      const prompt = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+
+Repository: ${owner}/${repo}
+
+File Structure:
+${fileStructure}
+
+Please provide a detailed analysis including:
+1. Project architecture overview
+2. Main components and their potential purposes
+3. Suggested improvements or best practices
+4. Technologies identified from the file structure`;
+
+      // Make OpenRouter API call
+      const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openrouter/auto',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error("Failed to analyze repository");
+      }
+
+      const aiData = await aiResponse.json();
+      setAnalysis(aiData.choices[0].message.content);
+      
       toast({
-        title: "Analysis Started",
-        description: "Processing repository structure...",
+        title: "Analysis Complete",
+        description: "Repository has been successfully analyzed",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to analyze repository",
+        description: error instanceof Error ? error.message : "Failed to analyze repository",
         variant: "destructive",
       });
+      setAnalysis("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,9 +248,9 @@ export const GithubAnalyzer = () => {
                   <Button 
                     type="submit"
                     className="bg-mint hover:bg-mint-light text-white"
-                    disabled={!isKeySet}
+                    disabled={!isKeySet || isLoading}
                   >
-                    Analyze
+                    {isLoading ? "Analyzing..." : "Analyze"}
                   </Button>
                 </form>
                 
@@ -208,6 +279,7 @@ export const GithubAnalyzer = () => {
                     size="icon"
                     onClick={handleCopy}
                     className="hover:text-mint"
+                    disabled={!analysis}
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
@@ -216,14 +288,19 @@ export const GithubAnalyzer = () => {
                     size="icon"
                     onClick={handleExport}
                     className="hover:text-mint"
+                    disabled={!analysis}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
               
-              <div className="bg-muted p-4 rounded-lg min-h-[400px] font-mono text-sm">
-                {analysis || (
+              <div className="bg-muted p-4 rounded-lg min-h-[400px] font-mono text-sm overflow-auto">
+                {isLoading ? (
+                  <p className="text-muted-foreground">Analyzing repository...</p>
+                ) : analysis ? (
+                  <pre className="whitespace-pre-wrap">{analysis}</pre>
+                ) : (
                   <p className="text-muted-foreground">
                     Analysis results will appear here...
                   </p>
