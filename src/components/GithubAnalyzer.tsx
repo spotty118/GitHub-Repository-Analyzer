@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoCircle } from "lucide-react";
 
 const OPENROUTER_MODELS = [
   { value: "openai/gpt-4o-2024-08-06", label: "GPT-4 Turbo (Aug 2024)" },
@@ -308,34 +310,46 @@ Format the instructions as clear directives that will guide future AI interactio
                   )}
                 </form>
 
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="model-override"
-                      checked={useModelOverride}
-                      onCheckedChange={setUseModelOverride}
-                    />
-                    <Label htmlFor="model-override">Use Model Override</Label>
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="model-override"
+                        checked={useModelOverride}
+                        onCheckedChange={setUseModelOverride}
+                      />
+                      <Label htmlFor="model-override">Use Model Override</Label>
+                    </div>
+                    
+                    {useModelOverride && (
+                      <Select
+                        value={selectedModel}
+                        onValueChange={setSelectedModel}
+                      >
+                        <SelectTrigger className="w-[300px]">
+                          <SelectValue placeholder="Select a model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OPENROUTER_MODELS.map((model) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              {model.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   
                   {useModelOverride && (
-                    <Select
-                      value={selectedModel}
-                      onValueChange={setSelectedModel}
-                    >
-                      <SelectTrigger className="w-[300px]">
-                        <SelectValue placeholder="Select a model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OPENROUTER_MODELS.map((model) => (
-                          <SelectItem key={model.value} value={model.value}>
-                            {model.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Alert>
+                      <InfoCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Different models have varying capabilities, response times, and costs. If analysis seems slow, the selected model might have longer processing times. Faster models may provide less detailed analysis.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
+
               </div>
 
               {/* AI Role Section */}
