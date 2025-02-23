@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Github, FolderTree, Copy, Download, Key } from "lucide-react";
+import { Github, FolderTree, Copy, Download, Key, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const OPENROUTER_MODELS = [
   { value: "openai/gpt-4o-2024-08-06", label: "GPT-4 Turbo (Aug 2024)" },
@@ -41,6 +41,7 @@ export const GithubAnalyzer = () => {
   const [fileStructure, setFileStructure] = useState<string>("");
   const [useModelOverride, setUseModelOverride] = useState(false);
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
+  const [customInstructions, setCustomInstructions] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -132,7 +133,7 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
-      const prompt = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+      let promptText = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
 
 Repository: ${owner}/${repo}
 
@@ -145,6 +146,10 @@ Please provide a detailed analysis including:
 3. Suggested improvements or best practices
 4. Technologies identified from the file structure`;
 
+      if (customInstructions) {
+        promptText += `\n\nAdditional Instructions:\n${customInstructions}`;
+      }
+
       const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -156,7 +161,7 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'user',
-              content: prompt,
+              content: promptText,
             },
           ],
         }),
@@ -216,8 +221,8 @@ Please provide a detailed analysis including:
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-center text-foreground">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <h1 className="text-4xl font-bold text-center text-foreground">
           GitHub Repository Analyzer
         </h1>
         
@@ -311,17 +316,6 @@ Please provide a detailed analysis including:
                     {isLoading ? "Analyzing..." : "Analyze"}
                   </Button>
                 </form>
-                
-                <div className="mt-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <FolderTree className="w-5 h-5 text-mint" />
-                    <h3 className="text-lg font-medium">File Structure</h3>
-                  </div>
-                  <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm">
-                    {/* File tree will be displayed here */}
-                    <p className="text-muted-foreground">Repository structure will appear here...</p>
-                  </div>
-                </div>
               </div>
             </div>
           </Card>
@@ -364,6 +358,46 @@ Please provide a detailed analysis including:
                   </p>
                 )}
               </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* File Structure and Custom Instructions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* File Structure Panel */}
+          <Card className="p-6 animate-fade-in">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <FolderTree className="w-5 h-5 text-mint" />
+                <h2 className="text-xl font-semibold">File Structure</h2>
+              </div>
+              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
+                {isLoading ? (
+                  <p className="text-muted-foreground">Loading repository structure...</p>
+                ) : fileStructure ? (
+                  <pre className="whitespace-pre">{fileStructure}</pre>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Repository structure will appear here...
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Custom Instructions Panel */}
+          <Card className="p-6 animate-fade-in">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5 text-mint" />
+                <h2 className="text-xl font-semibold">Custom Instructions</h2>
+              </div>
+              <Textarea
+                placeholder="Add custom instructions for the AI analysis..."
+                value={customInstructions}
+                onChange={(e) => setCustomInstructions(e.target.value)}
+                className="min-h-[300px] font-mono text-sm"
+              />
             </div>
           </Card>
         </div>
