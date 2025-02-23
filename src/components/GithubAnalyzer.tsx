@@ -12,7 +12,6 @@ export const GithubAnalyzer = () => {
   const [apiKey, setApiKey] = useState("");
   const [isKeySet, setIsKeySet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [fileStructure, setFileStructure] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -89,9 +88,6 @@ export const GithubAnalyzer = () => {
     }
 
     setIsLoading(true);
-    setFileStructure("");
-    setAnalysis("");
-    
     try {
       // Extract owner and repo from URL
       const { owner, repo } = extractRepoInfo(repoUrl);
@@ -104,8 +100,7 @@ export const GithubAnalyzer = () => {
       const data = await response.json();
 
       // Create a structured representation of the repository
-      const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
-      setFileStructure(structure);
+      const fileStructure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
 
       // Prepare prompt for AI analysis
       const prompt = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
@@ -113,7 +108,7 @@ export const GithubAnalyzer = () => {
 Repository: ${owner}/${repo}
 
 File Structure:
-${structure}
+${fileStructure}
 
 Please provide a detailed analysis including:
 1. Project architecture overview
@@ -157,7 +152,6 @@ Please provide a detailed analysis including:
         variant: "destructive",
       });
       setAnalysis("");
-      setFileStructure("");
     } finally {
       setIsLoading(false);
     }
@@ -265,16 +259,9 @@ Please provide a detailed analysis including:
                     <FolderTree className="w-5 h-5 text-mint" />
                     <h3 className="text-lg font-medium">File Structure</h3>
                   </div>
-                  <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
-                    {isLoading ? (
-                      <p className="text-muted-foreground">Loading repository structure...</p>
-                    ) : fileStructure ? (
-                      <pre className="whitespace-pre">{fileStructure}</pre>
-                    ) : (
-                      <p className="text-muted-foreground">
-                        Repository structure will appear here...
-                      </p>
-                    )}
+                  <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm">
+                    {/* File tree will be displayed here */}
+                    <p className="text-muted-foreground">Repository structure will appear here...</p>
                   </div>
                 </div>
               </div>
