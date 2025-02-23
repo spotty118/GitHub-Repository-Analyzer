@@ -5,6 +5,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+
+const OPENROUTER_MODELS = [
+  { value: "openai/gpt-4o-2024-08-06", label: "GPT-4 Turbo (Aug 2024)" },
+  { value: "openai/gpt-4o-2024-05-13", label: "GPT-4 Turbo (May 2024)" },
+  { value: "openai/gpt-4o-mini-2024-07-18", label: "GPT-4 Turbo Mini" },
+  { value: "openai/chatgpt-4o-latest", label: "ChatGPT-4 Latest" },
+  { value: "openai/o1-preview-2024-09-12", label: "O1 Preview" },
+  { value: "openai/o1-mini-2024-09-12", label: "O1 Mini" },
+  { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+  { value: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
+  { value: "anthropic/claude-3-opus", label: "Claude 3 Opus" },
+  { value: "anthropic/claude-2.1", label: "Claude 2.1" },
+  { value: "google/gemini-pro-1.5", label: "Gemini Pro 1.5" },
+  { value: "google/gemini-flash-1.5", label: "Gemini Flash 1.5" },
+  { value: "mistralai/mistral-large-2407", label: "Mistral Large" },
+  { value: "mistralai/mistral-nemo", label: "Mistral Nemo" },
+  { value: "deepseek/deepseek-r1", label: "Deepseek R1" },
+  { value: "meta-llama/llama-3.1-70b-instruct", label: "Llama 3.1 70B" },
+  { value: "meta-llama/llama-3.1-405b-instruct", label: "Llama 3.1 405B" },
+  { value: "mistralai/mixtral-8x22b-instruct", label: "Mixtral 8x22B" },
+  { value: "cohere/command-r-plus", label: "Command-R Plus" },
+  { value: "cohere/command-r", label: "Command-R" },
+];
 
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
@@ -12,6 +38,9 @@ export const GithubAnalyzer = () => {
   const [apiKey, setApiKey] = useState("");
   const [isKeySet, setIsKeySet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fileStructure, setFileStructure] = useState<string>("");
+  const [useModelOverride, setUseModelOverride] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -88,27 +117,27 @@ export const GithubAnalyzer = () => {
     }
 
     setIsLoading(true);
+    setFileStructure("");
+    setAnalysis("");
+    
     try {
-      // Extract owner and repo from URL
       const { owner, repo } = extractRepoInfo(repoUrl);
 
-      // Fetch repository data from GitHub API
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`);
       if (!response.ok) {
         throw new Error("Failed to fetch repository data");
       }
       const data = await response.json();
 
-      // Create a structured representation of the repository
-      const fileStructure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
+      const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
+      setFileStructure(structure);
 
-      // Prepare prompt for AI analysis
       const prompt = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
 
 Repository: ${owner}/${repo}
 
 File Structure:
-${fileStructure}
+${structure}
 
 Please provide a detailed analysis including:
 1. Project architecture overview
@@ -116,7 +145,6 @@ Please provide a detailed analysis including:
 3. Suggested improvements or best practices
 4. Technologies identified from the file structure`;
 
-      // Make OpenRouter API call
       const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -124,7 +152,7 @@ Please provide a detailed analysis including:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openrouter/auto',
+          model: useModelOverride ? selectedModel : 'openrouter/auto',
           messages: [
             {
               role: 'user',
@@ -152,6 +180,7 @@ Please provide a detailed analysis including:
         variant: "destructive",
       });
       setAnalysis("");
+      setFileStructure("");
     } finally {
       setIsLoading(false);
     }
@@ -229,6 +258,35 @@ Please provide a detailed analysis including:
                     </Button>
                   )}
                 </form>
+
+                <div className="flex items-center space-x-4 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="model-override"
+                      checked={useModelOverride}
+                      onCheckedChange={setUseModelOverride}
+                    />
+                    <Label htmlFor="model-override">Use Model Override</Label>
+                  </div>
+                  
+                  {useModelOverride && (
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                    >
+                      <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Select a model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPENROUTER_MODELS.map((model) => (
+                          <SelectItem key={model.value} value={model.value}>
+                            {model.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
 
               {/* Repository Input Section */}
