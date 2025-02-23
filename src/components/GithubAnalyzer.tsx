@@ -44,15 +44,25 @@ export const GithubAnalyzer = () => {
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
   const [customInstructions, setCustomInstructions] = useState<string>("");
   const [aiRole, setAiRole] = useState<string>("You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.");
+  const [provider, setProvider] = useState<"openai" | "openrouter">("openrouter");
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedKey = localStorage.getItem("openrouter_key");
+    if (provider === "openai") {
+      setUseModelOverride(false);
+    }
+  }, [provider]);
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem(`${provider}_key`);
     if (savedKey) {
       setApiKey(savedKey);
       setIsKeySet(true);
+    } else {
+      setIsKeySet(false);
+      setApiKey("");
     }
-  }, []);
+  }, [provider]);
 
   const extractRepoInfo = (url: string) => {
     try {
@@ -75,13 +85,13 @@ export const GithubAnalyzer = () => {
     if (!apiKey.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid OpenRouter API key",
+        description: `Please enter a valid ${provider === "openai" ? "OpenAI" : "OpenRouter"} API key`,
         variant: "destructive",
       });
       return;
     }
 
-    localStorage.setItem("openrouter_key", apiKey);
+    localStorage.setItem(`${provider}_key`, apiKey);
     setIsKeySet(true);
     toast({
       title: "Success",
@@ -90,7 +100,7 @@ export const GithubAnalyzer = () => {
   };
 
   const handleRemoveKey = () => {
-    localStorage.removeItem("openrouter_key");
+    localStorage.removeItem(`${provider}_key`);
     setApiKey("");
     setIsKeySet(false);
     toast({
@@ -104,7 +114,7 @@ export const GithubAnalyzer = () => {
     if (!isKeySet) {
       toast({
         title: "Error",
-        description: "Please set your OpenRouter API key first",
+        description: `Please set your ${provider === "openai" ? "OpenAI" : "OpenRouter"} API key first`,
         variant: "destructive",
       });
       return;
@@ -136,14 +146,25 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
-      const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const endpoint = provider === "openai" 
+        ? 'https://api.openai.com/v1/chat/completions'
+        : 'https://openrouter.ai/api/v1/chat/completions';
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        ...(provider === "openrouter" && { 'HTTP-Referer': window.location.origin }),
+      };
+
+      const modelConfig = provider === "openai" 
+        ? { model: "gpt-4-turbo-preview" }
+        : { model: useModelOverride ? selectedModel : 'openrouter/auto' };
+
+      const analysisResponse = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          model: useModelOverride ? selectedModel : 'openrouter/auto',
+          ...modelConfig,
           messages: [
             {
               role: 'system',
@@ -151,7 +172,7 @@ export const GithubAnalyzer = () => {
             },
             {
               role: 'user',
-              content: `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+              content: `Analyze this GitHub repository structure and provide insights about the project architecture:
 
 Repository: ${owner}/${repo}
 
@@ -176,55 +197,28 @@ Please provide a detailed analysis including:
       const analysisText = analysisData.choices[0].message.content;
       setAnalysis(analysisText);
 
-      // Second request: Generate focused custom instructions for AI interactions
-      const instructionsResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const instructionsResponse = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          model: useModelOverride ? selectedModel : 'openrouter/auto',
+          ...modelConfig,
           messages: [
             {
               role: 'system',
-              content: "You are an expert software architect specializing in creating comprehensive development guidelines. Focus on creating structured, forward-thinking instructions that consider both immediate needs and future scalability.",
+              content: "You are an expert software architect specializing in creating comprehensive development guidelines.",
             },
             {
               role: 'user',
-              content: `Based on this repository analysis, create detailed custom AI instructions that cover both technical and architectural aspects:
+              content: `Based on this repository analysis, create detailed custom AI instructions:
 
-Repository Analysis:
 ${analysisText}
 
-Create clear instructions addressing these key areas:
-
-1. Core Understanding:
-- Project's fundamental purpose and business context
-- Key user personas and their needs
-- Critical business rules and constraints
-
-2. Technical Architecture:
-- Current architectural patterns and their rationale
-- Core technologies and their specific usage patterns
-- Integration points and data flow patterns
-
-3. Development Guidelines:
-- Code organization principles
-- Naming conventions and coding standards
-- Testing requirements and coverage expectations
-
-4. Future Considerations:
-- Scalability requirements and growth patterns
-- Performance expectations and optimization guidelines
-- Security considerations and compliance requirements
-
-5. Change Management:
-- Impact assessment guidelines
-- Backward compatibility requirements
-- Documentation update requirements
-
-Format these as clear, actionable directives that any AI system can follow when working with this codebase. Include specific examples where relevant.`,
+Create instructions addressing:
+1. Core Understanding & Business Context
+2. Technical Architecture Guidelines
+3. Development Standards
+4. Future Considerations
+5. Change Management Guidelines`,
             },
           ],
         }),
@@ -292,20 +286,31 @@ Format these as clear, actionable directives that any AI system can follow when 
         </h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Input Panel */}
           <Card className="p-6">
             <div className="flex flex-col gap-4">
-              {/* API Key Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Key className="w-5 h-5 text-mint" />
-                  <h2 className="text-xl font-semibold">API Key Configuration</h2>
+                  <h2 className="text-xl font-semibold">API Configuration</h2>
                 </div>
+
+                <Select
+                  value={provider}
+                  onValueChange={(value: "openai" | "openrouter") => setProvider(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select API Provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="openrouter">OpenRouter</SelectItem>
+                  </SelectContent>
+                </Select>
                 
                 <form onSubmit={handleSaveKey} className="flex space-x-2">
                   <Input
                     type="password"
-                    placeholder="Enter OpenRouter API key"
+                    placeholder={`Enter ${provider === "openai" ? "OpenAI" : "OpenRouter"} API key`}
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     className="flex-1"
@@ -329,48 +334,49 @@ Format these as clear, actionable directives that any AI system can follow when 
                   )}
                 </form>
 
-                <div className="flex flex-col space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="model-override"
-                        checked={useModelOverride}
-                        onCheckedChange={setUseModelOverride}
-                      />
-                      <Label htmlFor="model-override">Use Model Override</Label>
+                {provider === "openrouter" && (
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="model-override"
+                          checked={useModelOverride}
+                          onCheckedChange={setUseModelOverride}
+                        />
+                        <Label htmlFor="model-override">Use Model Override</Label>
+                      </div>
+                      
+                      {useModelOverride && (
+                        <Select
+                          value={selectedModel}
+                          onValueChange={setSelectedModel}
+                        >
+                          <SelectTrigger className="w-[300px]">
+                            <SelectValue placeholder="Select a model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {OPENROUTER_MODELS.map((model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {model.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                     
                     {useModelOverride && (
-                      <Select
-                        value={selectedModel}
-                        onValueChange={setSelectedModel}
-                      >
-                        <SelectTrigger className="w-[300px]">
-                          <SelectValue placeholder="Select a model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {OPENROUTER_MODELS.map((model) => (
-                            <SelectItem key={model.value} value={model.value}>
-                              {model.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          Different models have varying capabilities, response times, and costs. If analysis seems slow, the selected model might have longer processing times. Faster models may provide less detailed analysis.
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
-                  
-                  {useModelOverride && (
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        Different models have varying capabilities, response times, and costs. If analysis seems slow, the selected model might have longer processing times. Faster models may provide less detailed analysis.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                )}
               </div>
 
-              {/* AI Role Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-mint" />
@@ -384,7 +390,6 @@ Format these as clear, actionable directives that any AI system can follow when 
                 />
               </div>
 
-              {/* Repository Input Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Github className="w-5 h-5 text-mint" />
@@ -410,7 +415,6 @@ Format these as clear, actionable directives that any AI system can follow when 
             </div>
           </Card>
 
-          {/* Results Panel */}
           <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -454,9 +458,7 @@ Format these as clear, actionable directives that any AI system can follow when 
           </Card>
         </div>
 
-        {/* File Structure and Custom Instructions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* File Structure Panel */}
           <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -479,7 +481,6 @@ Format these as clear, actionable directives that any AI system can follow when 
             </div>
           </Card>
 
-          {/* Generated Custom Instructions Panel */}
           <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
