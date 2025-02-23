@@ -293,7 +293,7 @@ Format these as clear, actionable directives that any AI system can follow when 
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Input Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6">
             <div className="flex flex-col gap-4">
               {/* API Key Section */}
               <div className="space-y-3">
@@ -411,7 +411,7 @@ Format these as clear, actionable directives that any AI system can follow when 
           </Card>
 
           {/* Results Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Analysis Results</h2>
@@ -437,16 +437,18 @@ Format these as clear, actionable directives that any AI system can follow when 
                 </div>
               </div>
               
-              <div className="bg-muted p-4 rounded-lg min-h-[400px] font-mono text-sm overflow-auto">
-                {isLoading ? (
-                  <p className="text-muted-foreground">Analyzing repository...</p>
-                ) : analysis ? (
-                  <pre className="whitespace-pre-wrap">{analysis}</pre>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Analysis results will appear here...
-                  </p>
-                )}
+              <div className="relative h-[400px] bg-muted rounded-lg">
+                <div className="absolute inset-0 p-4 overflow-y-auto">
+                  {isLoading ? (
+                    <p className="text-muted-foreground">Analyzing repository...</p>
+                  ) : analysis ? (
+                    <pre className="whitespace-pre-wrap text-sm">{analysis}</pre>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Analysis results will appear here...
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
@@ -455,64 +457,66 @@ Format these as clear, actionable directives that any AI system can follow when 
         {/* File Structure and Custom Instructions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* File Structure Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <FolderTree className="w-5 h-5 text-mint" />
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
-              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
-                {isLoading ? (
-                  <p className="text-muted-foreground">Loading repository structure...</p>
-                ) : fileStructure ? (
-                  <pre className="whitespace-pre">{fileStructure}</pre>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Repository structure will appear here...
-                  </p>
-                )}
+              <div className="relative h-[400px] bg-muted rounded-lg">
+                <div className="absolute inset-0 p-4 overflow-y-auto">
+                  {isLoading ? (
+                    <p className="text-muted-foreground">Loading repository structure...</p>
+                  ) : fileStructure ? (
+                    <pre className="whitespace-pre font-mono text-sm">{fileStructure}</pre>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Repository structure will appear here...
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
 
           {/* Generated Custom Instructions Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-mint" />
                   <h2 className="text-xl font-semibold">Generated Custom Instructions</h2>
                 </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      if (customInstructions) {
-                        navigator.clipboard.writeText(customInstructions);
-                        toast({
-                          title: "Copied!",
-                          description: "Custom instructions copied to clipboard",
-                        });
-                      }
-                    }}
-                    className="hover:text-mint"
-                    disabled={!customInstructions}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if (customInstructions) {
+                      navigator.clipboard.writeText(customInstructions);
+                      toast({
+                        title: "Copied!",
+                        description: "Custom instructions copied to clipboard",
+                      });
+                    }
+                  }}
+                  className="hover:text-mint"
+                  disabled={!customInstructions}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
               </div>
-              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
-                {isLoading ? (
-                  <p className="text-muted-foreground">Generating custom instructions...</p>
-                ) : customInstructions ? (
-                  <pre className="whitespace-pre-wrap">{customInstructions}</pre>
-                ) : (
-                  <p className="text-muted-foreground">
-                    AI-generated custom instructions will appear here...
-                  </p>
-                )}
+              <div className="relative h-[400px] bg-muted rounded-lg">
+                <div className="absolute inset-0 p-4 overflow-y-auto">
+                  {isLoading ? (
+                    <p className="text-muted-foreground">Generating custom instructions...</p>
+                  ) : customInstructions ? (
+                    <pre className="whitespace-pre-wrap text-sm">{customInstructions}</pre>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      AI-generated custom instructions will appear here...
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
