@@ -135,24 +135,7 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
-      const promptText = `${aiRole}
-
-Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
-
-Repository: ${owner}/${repo}
-
-File Structure:
-${structure}
-
-Please provide a detailed analysis including:
-1. Project architecture overview
-2. Main components and their potential purposes
-3. Suggested improvements or best practices
-4. Technologies identified from the file structure
-
-After the analysis, provide custom instructions that could help developers understand and work with this codebase. Format these instructions as "CUSTOM_INSTRUCTIONS:" followed by the actual instructions.`;
-
-      const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -167,24 +150,72 @@ After the analysis, provide custom instructions that could help developers under
             },
             {
               role: 'user',
-              content: promptText,
+              content: `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+
+Repository: ${owner}/${repo}
+
+File Structure:
+${structure}
+
+Please provide a detailed analysis including:
+1. Project architecture overview
+2. Main components and their potential purposes
+3. Suggested improvements or best practices
+4. Technologies identified from the file structure`,
             },
           ],
         }),
       });
 
-      if (!aiResponse.ok) {
+      if (!analysisResponse.ok) {
         throw new Error("Failed to analyze repository");
       }
 
-      const aiData = await aiResponse.json();
-      const content = aiData.choices[0].message.content;
-
-      const parts = content.split('CUSTOM_INSTRUCTIONS:');
-      const analysisText = parts[0].trim();
-      const instructions = parts[1]?.trim() || '';
-
+      const analysisData = await analysisResponse.json();
+      const analysisText = analysisData.choices[0].message.content;
       setAnalysis(analysisText);
+
+      const instructionsResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: useModelOverride ? selectedModel : 'openrouter/auto',
+          messages: [
+            {
+              role: 'system',
+              content: "You are an experienced software developer who excels at creating clear, practical instructions for other developers working with codebases.",
+            },
+            {
+              role: 'user',
+              content: `Based on this repository structure and analysis, create practical instructions for developers who will work with this codebase:
+
+Repository: ${owner}/${repo}
+
+File Structure:
+${structure}
+
+Analysis:
+${analysisText}
+
+Provide clear, actionable instructions that will help developers:
+1. Set up and run the project
+2. Understand the codebase structure
+3. Follow the project's conventions
+4. Make contributions effectively`,
+            },
+          ],
+        }),
+      });
+
+      if (!instructionsResponse.ok) {
+        throw new Error("Failed to generate custom instructions");
+      }
+
+      const instructionsData = await instructionsResponse.json();
+      const instructions = instructionsData.choices[0].message.content;
       setCustomInstructions(instructions);
       
       toast({
