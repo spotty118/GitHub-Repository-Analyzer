@@ -42,6 +42,7 @@ export const GithubAnalyzer = () => {
   const [useModelOverride, setUseModelOverride] = useState(false);
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
   const [customInstructions, setCustomInstructions] = useState<string>("");
+  const [aiRole, setAiRole] = useState<string>("You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,7 +135,9 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
-      const promptText = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+      const promptText = `${aiRole}
+
+Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
 
 Repository: ${owner}/${repo}
 
@@ -158,6 +161,10 @@ After the analysis, provide custom instructions that could help developers under
         body: JSON.stringify({
           model: useModelOverride ? selectedModel : 'openrouter/auto',
           messages: [
+            {
+              role: 'system',
+              content: aiRole,
+            },
             {
               role: 'user',
               content: promptText,
@@ -299,6 +306,20 @@ After the analysis, provide custom instructions that could help developers under
                     </Select>
                   )}
                 </div>
+              </div>
+
+              {/* AI Role Section */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-5 h-5 text-mint" />
+                  <h2 className="text-xl font-semibold">AI Role Configuration</h2>
+                </div>
+                <Textarea
+                  placeholder="Enter the role/persona for the AI analyzer"
+                  value={aiRole}
+                  onChange={(e) => setAiRole(e.target.value)}
+                  className="min-h-[100px] font-mono text-sm"
+                />
               </div>
 
               {/* Repository Input Section */}
