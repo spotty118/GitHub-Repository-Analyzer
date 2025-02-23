@@ -157,7 +157,7 @@ export const GithubAnalyzer = () => {
       };
 
       const modelConfig = provider === "openai" 
-        ? { model: "gpt-4-turbo-preview" }
+        ? { model: "o3-mini-2025-01-31" }
         : { model: useModelOverride ? selectedModel : 'openrouter/auto' };
 
       const analysisResponse = await fetch(endpoint, {
