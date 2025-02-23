@@ -188,23 +188,43 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Create custom instructions that will help guide future AI interactions with this codebase. These instructions should establish context and define how the AI should approach and understand this specific application.",
+              content: "You are an expert software architect specializing in creating comprehensive development guidelines. Focus on creating structured, forward-thinking instructions that consider both immediate needs and future scalability.",
             },
             {
               role: 'user',
-              content: `Based on this repository analysis, create custom AI instructions:
+              content: `Based on this repository analysis, create detailed custom AI instructions that cover both technical and architectural aspects:
 
 Repository Analysis:
 ${analysisText}
 
-Please create clear instructions that will help AI:
-1. Understand the core purpose and context of this application
-2. Know how to approach code modifications and additions
-3. Maintain consistency with the existing architecture and patterns
-4. Consider important technical constraints and requirements
-5. Focus on user impact when making changes
+Create clear instructions addressing these key areas:
 
-Format the instructions as clear directives that will guide future AI interactions with this codebase.`,
+1. Core Understanding:
+- Project's fundamental purpose and business context
+- Key user personas and their needs
+- Critical business rules and constraints
+
+2. Technical Architecture:
+- Current architectural patterns and their rationale
+- Core technologies and their specific usage patterns
+- Integration points and data flow patterns
+
+3. Development Guidelines:
+- Code organization principles
+- Naming conventions and coding standards
+- Testing requirements and coverage expectations
+
+4. Future Considerations:
+- Scalability requirements and growth patterns
+- Performance expectations and optimization guidelines
+- Security considerations and compliance requirements
+
+5. Change Management:
+- Impact assessment guidelines
+- Backward compatibility requirements
+- Documentation update requirements
+
+Format these as clear, actionable directives that any AI system can follow when working with this codebase. Include specific examples where relevant.`,
             },
           ],
         }),
