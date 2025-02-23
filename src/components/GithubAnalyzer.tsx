@@ -41,7 +41,7 @@ export const GithubAnalyzer = () => {
   const [fileStructure, setFileStructure] = useState<string>("");
   const [useModelOverride, setUseModelOverride] = useState(false);
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
-  const [customInstructions, setCustomInstructions] = useState("");
+  const [customInstructions, setCustomInstructions] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,6 +120,7 @@ export const GithubAnalyzer = () => {
     setIsLoading(true);
     setFileStructure("");
     setAnalysis("");
+    setCustomInstructions("");
     
     try {
       const { owner, repo } = extractRepoInfo(repoUrl);
@@ -133,7 +134,7 @@ export const GithubAnalyzer = () => {
       const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
       setFileStructure(structure);
 
-      let promptText = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
+      const promptText = `Analyze this GitHub repository structure and provide insights about the project architecture, main components, and potential improvements:
 
 Repository: ${owner}/${repo}
 
@@ -144,11 +145,9 @@ Please provide a detailed analysis including:
 1. Project architecture overview
 2. Main components and their potential purposes
 3. Suggested improvements or best practices
-4. Technologies identified from the file structure`;
+4. Technologies identified from the file structure
 
-      if (customInstructions) {
-        promptText += `\n\nAdditional Instructions:\n${customInstructions}`;
-      }
+After the analysis, provide custom instructions that could help developers understand and work with this codebase. Format these instructions as "CUSTOM_INSTRUCTIONS:" followed by the actual instructions.`;
 
       const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -172,7 +171,14 @@ Please provide a detailed analysis including:
       }
 
       const aiData = await aiResponse.json();
-      setAnalysis(aiData.choices[0].message.content);
+      const content = aiData.choices[0].message.content;
+
+      const parts = content.split('CUSTOM_INSTRUCTIONS:');
+      const analysisText = parts[0].trim();
+      const instructions = parts[1]?.trim() || '';
+
+      setAnalysis(analysisText);
+      setCustomInstructions(instructions);
       
       toast({
         title: "Analysis Complete",
@@ -186,6 +192,7 @@ Please provide a detailed analysis including:
       });
       setAnalysis("");
       setFileStructure("");
+      setCustomInstructions("");
     } finally {
       setIsLoading(false);
     }
@@ -385,19 +392,45 @@ Please provide a detailed analysis including:
             </div>
           </Card>
 
-          {/* Custom Instructions Panel */}
+          {/* Generated Custom Instructions Panel */}
           <Card className="p-6 animate-fade-in">
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5 text-mint" />
-                <h2 className="text-xl font-semibold">Custom Instructions</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-5 h-5 text-mint" />
+                  <h2 className="text-xl font-semibold">Generated Custom Instructions</h2>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (customInstructions) {
+                        navigator.clipboard.writeText(customInstructions);
+                        toast({
+                          title: "Copied!",
+                          description: "Custom instructions copied to clipboard",
+                        });
+                      }
+                    }}
+                    className="hover:text-mint"
+                    disabled={!customInstructions}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              <Textarea
-                placeholder="Add custom instructions for the AI analysis..."
-                value={customInstructions}
-                onChange={(e) => setCustomInstructions(e.target.value)}
-                className="min-h-[300px] font-mono text-sm"
-              />
+              <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm overflow-auto">
+                {isLoading ? (
+                  <p className="text-muted-foreground">Generating custom instructions...</p>
+                ) : customInstructions ? (
+                  <pre className="whitespace-pre-wrap">{customInstructions}</pre>
+                ) : (
+                  <p className="text-muted-foreground">
+                    AI-generated custom instructions will appear here...
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
         </div>
