@@ -238,7 +238,7 @@ After the analysis, provide custom instructions that could help developers under
           <Card className="p-6 animate-fade-in h-full">
             <div className="space-y-6 h-full flex flex-col">
               {/* API Key Section */}
-              <div className="space-y-4 flex-1">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Key className="w-5 h-5 text-mint" />
                   <h2 className="text-xl font-semibold">API Key Configuration</h2>
@@ -271,7 +271,7 @@ After the analysis, provide custom instructions that could help developers under
                   )}
                 </form>
 
-                <div className="flex items-center space-x-4 pt-2">
+                <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="model-override"
