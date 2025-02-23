@@ -175,6 +175,7 @@ Please provide a detailed analysis including:
       const analysisText = analysisData.choices[0].message.content;
       setAnalysis(analysisText);
 
+      // Second request: Generate core app information
       const instructionsResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -186,11 +187,11 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Create a clear, practical developer guide that includes the project's purpose, setup instructions, and essential development workflows. Focus on what developers need to know to work with this codebase effectively.",
+              content: "Create a concise summary focusing only on what this application is and what it does. Include its core purpose, main features, and key functionality.",
             },
             {
               role: 'user',
-              content: `Based on this repository structure and analysis, create a developer guide in markdown format:
+              content: `Based on this repository structure and analysis, create a core application summary:
 
 Repository: ${owner}/${repo}
 
@@ -200,12 +201,11 @@ ${structure}
 Analysis:
 ${analysisText}
 
-Include:
-1. Project name and purpose
-2. Setup and installation steps
-3. Key development commands
-4. Essential workflows
-5. Project structure overview`,
+Please describe:
+1. What this application is
+2. Its main purpose
+3. Key features and functionality
+4. Core technical components`,
             },
           ],
         }),
