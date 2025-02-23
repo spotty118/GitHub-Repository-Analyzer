@@ -175,7 +175,7 @@ Please provide a detailed analysis including:
       const analysisText = analysisData.choices[0].message.content;
       setAnalysis(analysisText);
 
-      // Second request: Generate focused context reinforcement
+      // Second request: Generate focused custom instructions for AI interactions
       const instructionsResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -187,28 +187,23 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Analyze the codebase to create a dual-focused summary that covers both what the application does for users and its technical implementation.",
+              content: "Create custom instructions that will help guide future AI interactions with this codebase. These instructions should establish context and define how the AI should approach and understand this specific application.",
             },
             {
               role: 'user',
-              content: `Based on the codebase analysis, provide a comprehensive summary:
+              content: `Based on this repository analysis, create custom AI instructions:
 
-Analysis Summary:
+Repository Analysis:
 ${analysisText}
 
-Please address both aspects:
+Please create clear instructions that will help AI:
+1. Understand the core purpose and context of this application
+2. Know how to approach code modifications and additions
+3. Maintain consistency with the existing architecture and patterns
+4. Consider important technical constraints and requirements
+5. Focus on user impact when making changes
 
-User Perspective:
-1. What does this application do for its users?
-2. Key features and capabilities
-3. Main user benefits and use cases
-4. Primary workflows and interactions
-
-Technical Implementation:
-1. Core functionality and architecture
-2. Key components and their interactions
-3. Technical stack and main technologies
-4. Notable implementation patterns`,
+Format the instructions as clear directives that will guide future AI interactions with this codebase.`,
             },
           ],
         }),
