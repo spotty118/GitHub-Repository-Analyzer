@@ -21,7 +21,8 @@ export const GithubAnalyzer = () => {
     }
   }, []);
 
-  const handleSaveKey = () => {
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!apiKey.trim()) {
       toast({
         title: "Error",
@@ -49,7 +50,8 @@ export const GithubAnalyzer = () => {
     });
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!isKeySet) {
       toast({
         title: "Error",
@@ -130,7 +132,7 @@ export const GithubAnalyzer = () => {
                   <h2 className="text-xl font-semibold">API Key Configuration</h2>
                 </div>
                 
-                <div className="flex space-x-2">
+                <form onSubmit={handleSaveKey} className="flex space-x-2">
                   <Input
                     type="password"
                     placeholder="Enter OpenRouter API key"
@@ -140,13 +142,14 @@ export const GithubAnalyzer = () => {
                   />
                   {!isKeySet ? (
                     <Button 
-                      onClick={handleSaveKey}
+                      type="submit"
                       className="bg-mint hover:bg-mint-light text-white"
                     >
                       Save Key
                     </Button>
                   ) : (
                     <Button 
+                      type="button"
                       onClick={handleRemoveKey}
                       variant="outline"
                       className="hover:text-destructive"
@@ -154,7 +157,7 @@ export const GithubAnalyzer = () => {
                       Remove Key
                     </Button>
                   )}
-                </div>
+                </form>
               </div>
 
               {/* Repository Input Section */}
@@ -164,7 +167,7 @@ export const GithubAnalyzer = () => {
                   <h2 className="text-xl font-semibold">Repository Input</h2>
                 </div>
                 
-                <div className="flex space-x-2">
+                <form onSubmit={handleAnalyze} className="flex space-x-2">
                   <Input
                     placeholder="Enter GitHub repository URL"
                     value={repoUrl}
@@ -172,13 +175,13 @@ export const GithubAnalyzer = () => {
                     className="flex-1"
                   />
                   <Button 
-                    onClick={handleAnalyze} 
+                    type="submit"
                     className="bg-mint hover:bg-mint-light text-white"
                     disabled={!isKeySet}
                   >
                     Analyze
                   </Button>
-                </div>
+                </form>
                 
                 <div className="mt-4">
                   <div className="flex items-center space-x-2 mb-2">
