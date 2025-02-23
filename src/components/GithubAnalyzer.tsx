@@ -187,20 +187,28 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "Based on the codebase analysis, create a concise context summary that focuses purely on functionality and technical characteristics, ignoring repository naming.",
+              content: "Analyze the codebase to create a dual-focused summary that covers both what the application does for users and its technical implementation.",
             },
             {
               role: 'user',
-              content: `Based on the codebase analysis, summarize the core technical aspects:
+              content: `Based on the codebase analysis, provide a comprehensive summary:
 
 Analysis Summary:
 ${analysisText}
 
-Focus on:
-1. Core functionality and features
-2. Technical architecture
-3. Key components and their interactions
-4. Main user workflows`,
+Please address both aspects:
+
+User Perspective:
+1. What does this application do for its users?
+2. Key features and capabilities
+3. Main user benefits and use cases
+4. Primary workflows and interactions
+
+Technical Implementation:
+1. Core functionality and architecture
+2. Key components and their interactions
+3. Technical stack and main technologies
+4. Notable implementation patterns`,
             },
           ],
         }),
