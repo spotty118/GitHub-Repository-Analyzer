@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Github, FileTree, Copy, Download } from "lucide-react";
+import { Github, FolderTree, Copy, Download } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,7 +95,7 @@ export const GithubAnalyzer = () => {
               
               <div className="mt-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <FileTree className="w-5 h-5 text-mint" />
+                  <FolderTree className="w-5 h-5 text-mint" />
                   <h3 className="text-lg font-medium">File Structure</h3>
                 </div>
                 <div className="bg-muted p-4 rounded-lg min-h-[300px] font-mono text-sm">
