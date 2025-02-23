@@ -292,7 +292,7 @@ Format these as clear, actionable directives that any AI system can follow when 
           GitHub Repository Analyzer
         </h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr">
           {/* Input Panel */}
           <Card className="p-6 animate-fade-in">
             <div className="flex flex-col gap-4">
@@ -454,9 +454,9 @@ Format these as clear, actionable directives that any AI system can follow when 
         </div>
 
         {/* File Structure and Custom Instructions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 auto-rows-fr">
           {/* File Structure Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6 animate-fade-in h-full">
             <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center space-x-2">
                 <FolderTree className="w-5 h-5 text-mint" />
@@ -477,7 +477,7 @@ Format these as clear, actionable directives that any AI system can follow when 
           </Card>
 
           {/* Generated Custom Instructions Panel */}
-          <Card className="p-6 animate-fade-in">
+          <Card className="p-6 animate-fade-in h-full">
             <div className="flex flex-col h-full space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
