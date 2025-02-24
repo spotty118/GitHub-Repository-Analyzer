@@ -160,6 +160,8 @@ export const GithubAnalyzer = () => {
         ? { model: "gpt-4o" }
         : { model: useModelOverride ? selectedModel : 'openrouter/auto' };
 
+      console.log('Using model config:', modelConfig);
+
       const analysisResponse = await fetch(endpoint, {
         method: 'POST',
         headers,
