@@ -137,14 +137,26 @@ export const GithubAnalyzer = () => {
     try {
       const { owner, repo } = extractRepoInfo(repoUrl);
 
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`);
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
       if (!response.ok) {
-        throw new Error("Failed to fetch repository data");
+        const masterResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`);
+        if (!masterResponse.ok) {
+          throw new Error("Failed to fetch repository data");
+        }
+        const data = await masterResponse.json();
+        const structure = data.tree
+          .filter((item: any) => item.type === "blob")
+          .map((item: any) => `${item.type}: ${item.path}`)
+          .join('\n');
+        setFileStructure(structure);
+      } else {
+        const data = await response.json();
+        const structure = data.tree
+          .filter((item: any) => item.type === "blob")
+          .map((item: any) => `${item.type}: ${item.path}`)
+          .join('\n');
+        setFileStructure(structure);
       }
-      const data = await response.json();
-
-      const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
-      setFileStructure(structure);
 
       const endpoint = provider === "openai" 
         ? 'https://api.openai.com/v1/chat/completions'
@@ -170,22 +182,41 @@ export const GithubAnalyzer = () => {
           messages: [
             {
               role: 'system',
-              content: aiRole,
+              content: "Analyze repository structure and provide technical insights in a concise, structured format.",
             },
             {
               role: 'user',
-              content: `Analyze this GitHub repository structure and provide insights about the project architecture:
+              content: `Repository: ${owner}/${repo}
 
-Repository: ${owner}/${repo}
+Structure:
+${fileStructure}
 
-File Structure:
-${structure}
+Format response as follows:
 
-Please provide a detailed analysis including:
-1. Project architecture overview
-2. Main components and their potential purposes
-3. Suggested improvements or best practices
-4. Technologies identified from the file structure`,
+# Architecture
+- Core patterns
+- Key dependencies
+- Structure evaluation
+
+# Technical Issues
+- Code smells
+- Architecture concerns
+- Security risks
+
+# Improvements
+- Architecture optimizations
+- Performance enhancements
+- Security fixes
+
+# Stack Analysis
+- Current technologies
+- Recommended updates
+- Integration opportunities
+
+# Implementation
+- Priority tasks
+- Required changes
+- Risk assessment`,
             },
           ],
         }),
@@ -208,20 +239,39 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "You are an expert software architect specializing in creating comprehensive development guidelines.",
+              content: "Generate technical enhancement and maintenance instructions in a structured format.",
             },
             {
               role: 'user',
-              content: `Based on this repository analysis, create detailed custom AI instructions:
-
+              content: `Based on analysis:
 ${analysisText}
 
-Create instructions addressing:
-1. Core Understanding & Business Context
-2. Technical Architecture Guidelines
-3. Development Standards
-4. Future Considerations
-5. Change Management Guidelines`,
+Format instructions as:
+
+# Code Standards
+- Architecture rules
+- Component patterns
+- Testing requirements
+
+# Technical Tasks
+- Performance tasks
+- Security tasks
+- Scale optimizations
+
+# Development Process
+- Review checklist
+- CI/CD requirements
+- QA procedures
+
+# Maintenance
+- Dependency updates
+- Health monitoring
+- Performance metrics
+
+# Modernization
+- Technology updates
+- Scale preparation
+- Security hardening`,
             },
           ],
         }),
