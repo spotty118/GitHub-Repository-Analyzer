@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info } from "lucide-react";
+import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info, Code2, Link2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,21 @@ const OPENROUTER_MODELS = [
   { value: "cohere/command-r", label: "Command-R" },
 ];
 
+const DEFAULT_AI_ROLE = `You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.
+
+Technical Requirements:
+- React and TypeScript expertise
+- Tailwind CSS for styling
+- shadcn/ui component library integration
+- Modern web development best practices
+
+Link Self-Awareness:
+- Identify and validate repository links
+- Analyze cross-file dependencies
+- Track component relationships
+- Monitor import/export patterns
+- Evaluate code coupling`;
+
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysis, setAnalysis] = useState<string>("");
@@ -43,7 +59,7 @@ export const GithubAnalyzer = () => {
   const [useModelOverride, setUseModelOverride] = useState(false);
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
   const [customInstructions, setCustomInstructions] = useState<string>("");
-  const [aiRole, setAiRole] = useState<string>("You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.");
+  const [aiRole, setAiRole] = useState<string>(DEFAULT_AI_ROLE);
   const [provider, setProvider] = useState<"openai" | "openrouter">("openrouter");
   const { toast } = useToast();
 
@@ -377,15 +393,35 @@ Generate development guidelines for IDE AI assistance:
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-5 h-5 text-mint" />
-                  <h2 className="text-xl font-semibold">AI Role Configuration</h2>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <MessageSquare className="w-5 h-5 text-mint" />
+                    <h2 className="text-xl font-semibold">AI Role Configuration</h2>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Technical Requirements"
+                      className="hover:text-mint"
+                    >
+                      <Code2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Link Self-Awareness"
+                      className="hover:text-mint"
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <Textarea
                   placeholder="Enter the role/persona for the AI analyzer"
                   value={aiRole}
                   onChange={(e) => setAiRole(e.target.value)}
-                  className="min-h-[100px] font-mono text-sm"
+                  className="min-h-[200px] font-mono text-sm"
                 />
               </div>
 
