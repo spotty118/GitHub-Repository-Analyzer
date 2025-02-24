@@ -1,5 +1,6 @@
 
 import { GithubAnalyzer } from "@/components/GithubAnalyzer";
+import { ResponsiveBoxGrid } from "@/components/ResponsiveBoxGrid";
 
 const Index = () => {
   return (
@@ -9,6 +10,7 @@ const Index = () => {
           {/* Subtle gradient orb in the background */}
           <div className="absolute inset-0 bg-mint/5 -z-10 blur-3xl rounded-[50%] h-32"></div>
           <div className="animate-fade-in">
+            <ResponsiveBoxGrid />
             <GithubAnalyzer />
           </div>
         </div>
