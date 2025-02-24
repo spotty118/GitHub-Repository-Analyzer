@@ -111,19 +111,10 @@ export const GithubAnalyzer = () => {
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isKeySet) {
+    if (!isKeySet || !repoUrl) {
       toast({
         title: "Error",
-        description: `Please set your ${provider === "openai" ? "OpenAI" : "OpenRouter"} API key first`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!repoUrl) {
-      toast({
-        title: "Error",
-        description: "Please enter a GitHub repository URL",
+        description: !isKeySet ? `Please set your ${provider === "openai" ? "OpenAI" : "OpenRouter"} API key first` : "Please enter a GitHub repository URL",
         variant: "destructive",
       });
       return;
@@ -138,25 +129,25 @@ export const GithubAnalyzer = () => {
       const { owner, repo } = extractRepoInfo(repoUrl);
 
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
+      let structure;
       if (!response.ok) {
         const masterResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`);
         if (!masterResponse.ok) {
           throw new Error("Failed to fetch repository data");
         }
         const data = await masterResponse.json();
-        const structure = data.tree
+        structure = data.tree
           .filter((item: any) => item.type === "blob")
-          .map((item: any) => `${item.type}: ${item.path}`)
+          .map((item: any) => item.path)
           .join('\n');
-        setFileStructure(structure);
       } else {
         const data = await response.json();
-        const structure = data.tree
+        structure = data.tree
           .filter((item: any) => item.type === "blob")
-          .map((item: any) => `${item.type}: ${item.path}`)
+          .map((item: any) => item.path)
           .join('\n');
-        setFileStructure(structure);
       }
+      setFileStructure(structure);
 
       const endpoint = provider === "openai" 
         ? 'https://api.openai.com/v1/chat/completions'
@@ -182,54 +173,31 @@ export const GithubAnalyzer = () => {
           messages: [
             {
               role: 'system',
-              content: "Analyze repository structure and provide technical insights in a concise, structured format.",
+              content: "You are performing a technical code review. Focus on architecture patterns, code organization, and technical recommendations. Be concise and direct.",
             },
             {
               role: 'user',
-              content: `Repository: ${owner}/${repo}
+              content: `${owner}/${repo}
 
-Structure:
-${fileStructure}
+${structure}
 
-Format response as follows:
-
-# Architecture
-- Core patterns
-- Key dependencies
-- Structure evaluation
-
-# Technical Issues
-- Code smells
-- Architecture concerns
-- Security risks
-
-# Improvements
-- Architecture optimizations
-- Performance enhancements
-- Security fixes
-
-# Stack Analysis
-- Current technologies
-- Recommended updates
-- Integration opportunities
-
-# Implementation
-- Priority tasks
-- Required changes
-- Risk assessment`,
+Analyze with focus on:
+1. Architecture
+2. Code Structure
+3. Technical Stack
+4. Dependencies
+5. Enhancement Points`
             },
           ],
         }),
       });
 
       if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json().catch(() => ({}));
-        throw new Error(`Failed to analyze repository: ${errorData.error?.message || analysisResponse.statusText}`);
+        throw new Error(`Analysis failed: ${analysisResponse.statusText}`);
       }
 
       const analysisData = await analysisResponse.json();
-      const analysisText = analysisData.choices[0].message.content;
-      setAnalysis(analysisText);
+      setAnalysis(analysisData.choices[0].message.content);
 
       const instructionsResponse = await fetch(endpoint, {
         method: 'POST',
@@ -239,61 +207,38 @@ Format response as follows:
           messages: [
             {
               role: 'system',
-              content: "Generate technical enhancement and maintenance instructions in a structured format.",
+              content: "Generate IDE-compatible development guidelines based on the codebase analysis.",
             },
             {
               role: 'user',
-              content: `Based on analysis:
-${analysisText}
+              content: `Based on ${owner}/${repo} analysis:
 
-Format instructions as:
-
-# Code Standards
-- Architecture rules
-- Component patterns
-- Testing requirements
-
-# Technical Tasks
-- Performance tasks
-- Security tasks
-- Scale optimizations
-
-# Development Process
-- Review checklist
-- CI/CD requirements
-- QA procedures
-
-# Maintenance
-- Dependency updates
-- Health monitoring
-- Performance metrics
-
-# Modernization
-- Technology updates
-- Scale preparation
-- Security hardening`,
+Generate development guidelines for IDE AI assistance:
+1. Architecture patterns to follow
+2. Code style and organization
+3. Testing requirements
+4. Performance considerations
+5. Security requirements`
             },
           ],
         }),
       });
 
       if (!instructionsResponse.ok) {
-        const errorData = await instructionsResponse.json().catch(() => ({}));
-        throw new Error(`Failed to generate custom instructions: ${errorData.error?.message || instructionsResponse.statusText}`);
+        throw new Error(`Guidelines generation failed: ${instructionsResponse.statusText}`);
       }
 
       const instructionsData = await instructionsResponse.json();
-      const instructions = instructionsData.choices[0].message.content;
-      setCustomInstructions(instructions);
+      setCustomInstructions(instructionsData.choices[0].message.content);
       
       toast({
         title: "Analysis Complete",
-        description: "Repository has been successfully analyzed",
+        description: "Repository analyzed successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to analyze repository",
+        description: error instanceof Error ? error.message : "Analysis failed",
         variant: "destructive",
       });
       setAnalysis("");
