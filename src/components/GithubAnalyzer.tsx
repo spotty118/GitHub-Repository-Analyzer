@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const OPENROUTER_MODELS = [{
   value: "openai/gpt-4o-2024-08-06",
   label: "GPT-4 Turbo (Aug 2024)"
@@ -71,7 +70,6 @@ const OPENROUTER_MODELS = [{
   value: "cohere/command-r",
   label: "Command-R"
 }];
-
 const DEFAULT_AI_ROLE = `You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.
 
 Technical Requirements:
@@ -86,7 +84,6 @@ Link Self-Awareness:
 - Track component relationships
 - Monitor import/export patterns
 - Evaluate code coupling`;
-
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysis, setAnalysis] = useState<string>("");
@@ -102,13 +99,11 @@ export const GithubAnalyzer = () => {
   const {
     toast
   } = useToast();
-
   useEffect(() => {
     if (provider === "openai") {
       setUseModelOverride(false);
     }
   }, [provider]);
-
   useEffect(() => {
     const savedKey = localStorage.getItem(`${provider}_key`);
     if (savedKey) {
@@ -119,7 +114,6 @@ export const GithubAnalyzer = () => {
       setApiKey("");
     }
   }, [provider]);
-
   const extractRepoInfo = (url: string) => {
     try {
       const parsedUrl = new URL(url);
@@ -135,7 +129,6 @@ export const GithubAnalyzer = () => {
       throw new Error("Please enter a valid GitHub repository URL");
     }
   };
-
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey.trim()) {
@@ -153,7 +146,6 @@ export const GithubAnalyzer = () => {
       description: "API key saved successfully"
     });
   };
-
   const handleRemoveKey = () => {
     localStorage.removeItem(`${provider}_key`);
     setApiKey("");
@@ -163,7 +155,6 @@ export const GithubAnalyzer = () => {
       description: "API key removed successfully"
     });
   };
-
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isKeySet || !repoUrl) {
@@ -282,7 +273,6 @@ Generate development guidelines for IDE AI assistance:
       setIsLoading(false);
     }
   };
-
   const handleCopy = () => {
     if (analysis) {
       navigator.clipboard.writeText(analysis);
@@ -292,7 +282,6 @@ Generate development guidelines for IDE AI assistance:
       });
     }
   };
-
   const handleExport = () => {
     if (analysis) {
       const blob = new Blob([analysis], {
@@ -312,7 +301,6 @@ Generate development guidelines for IDE AI assistance:
       });
     }
   };
-
   return <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-center text-foreground">
@@ -403,8 +391,8 @@ Generate development guidelines for IDE AI assistance:
           </Card>
 
           <Card className="p-6">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Analysis Results</h2>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="icon" onClick={handleCopy} className="hover:text-mint" disabled={!analysis}>
@@ -416,7 +404,7 @@ Generate development guidelines for IDE AI assistance:
                 </div>
               </div>
               
-              <div className="relative flex-1 bg-muted rounded-lg">
+              <div className="relative h-[400px] bg-muted rounded-lg">
                 <div className="absolute inset-0 p-4 overflow-y-auto">
                   {isLoading ? <p className="text-muted-foreground">Analyzing repository...</p> : analysis ? <pre className="whitespace-pre-wrap text-sm">{analysis}</pre> : <p className="text-muted-foreground">
                       Analysis results will appear here...
@@ -429,12 +417,12 @@ Generate development guidelines for IDE AI assistance:
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <Card className="p-6">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center space-x-2 mb-4">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
                 <FolderTree className="w-5 h-5 text-mint" />
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
-              <div className="relative flex-1 bg-muted rounded-lg">
+              <div className="relative h-[400px] bg-muted rounded-lg">
                 <div className="absolute inset-0 p-4 overflow-y-auto">
                   {isLoading ? <p className="text-muted-foreground">Loading repository structure...</p> : fileStructure ? <pre className="whitespace-pre font-mono text-sm">{fileStructure}</pre> : <p className="text-muted-foreground">
                       Repository structure will appear here...
@@ -445,8 +433,8 @@ Generate development guidelines for IDE AI assistance:
           </Card>
 
           <Card className="p-6">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="w-5 h-5 text-mint" />
                   <h2 className="text-xl font-semibold">Generated Custom Instructions</h2>
@@ -463,7 +451,7 @@ Generate development guidelines for IDE AI assistance:
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="relative flex-1 bg-muted rounded-lg">
+              <div className="relative h-[400px] bg-muted rounded-lg">
                 <div className="absolute inset-0 p-4 overflow-y-auto">
                   {isLoading ? <p className="text-muted-foreground">Generating custom instructions...</p> : customInstructions ? <pre className="whitespace-pre-wrap text-sm">{customInstructions}</pre> : <p className="text-muted-foreground">
                       AI-generated custom instructions will appear here...
