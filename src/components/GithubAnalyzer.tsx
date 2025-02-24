@@ -43,7 +43,7 @@ export const GithubAnalyzer = () => {
   const [useModelOverride, setUseModelOverride] = useState(false);
   const [selectedModel, setSelectedModel] = useState(OPENROUTER_MODELS[0].value);
   const [customInstructions, setCustomInstructions] = useState<string>("");
-  const [aiRole, setAiRole] = useState<string>("You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories.");
+  const [aiRole, setAiRole] = useState<string>("You are an expert software architect and code reviewer who specializes in analyzing GitHub repositories and providing detailed code improvement recommendations.");
   const [provider, setProvider] = useState<"openai" | "openrouter">("openrouter");
   const { toast } = useToast();
 
@@ -137,14 +137,26 @@ export const GithubAnalyzer = () => {
     try {
       const { owner, repo } = extractRepoInfo(repoUrl);
 
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`);
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
       if (!response.ok) {
-        throw new Error("Failed to fetch repository data");
+        const masterResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`);
+        if (!masterResponse.ok) {
+          throw new Error("Failed to fetch repository data");
+        }
+        const data = await masterResponse.json();
+        const structure = data.tree
+          .filter((item: any) => item.type === "blob")
+          .map((item: any) => `${item.type}: ${item.path}`)
+          .join('\n');
+        setFileStructure(structure);
+      } else {
+        const data = await response.json();
+        const structure = data.tree
+          .filter((item: any) => item.type === "blob")
+          .map((item: any) => `${item.type}: ${item.path}`)
+          .join('\n');
+        setFileStructure(structure);
       }
-      const data = await response.json();
-
-      const structure = data.map((item: any) => `${item.type}: ${item.path}`).join('\n');
-      setFileStructure(structure);
 
       const endpoint = provider === "openai" 
         ? 'https://api.openai.com/v1/chat/completions'
@@ -174,18 +186,44 @@ export const GithubAnalyzer = () => {
             },
             {
               role: 'user',
-              content: `Analyze this GitHub repository structure and provide insights about the project architecture:
+              content: `Perform a comprehensive code analysis of this GitHub repository:
 
 Repository: ${owner}/${repo}
 
-File Structure:
-${structure}
+Complete File Structure:
+${fileStructure}
 
 Please provide a detailed analysis including:
-1. Project architecture overview
-2. Main components and their potential purposes
-3. Suggested improvements or best practices
-4. Technologies identified from the file structure`,
+
+1. Code Architecture Analysis:
+   - Project structure evaluation
+   - Design patterns identification
+   - Code organization assessment
+   - Dependencies and their purposes
+
+2. Technical Debt Identification:
+   - Potential architectural issues
+   - Code smell indicators
+   - Areas needing refactoring
+   - Security considerations
+
+3. Enhancement Recommendations:
+   - Architectural improvements
+   - Performance optimizations
+   - Security hardening suggestions
+   - Modern practice adoptions
+
+4. Technology Stack Assessment:
+   - Current technology evaluation
+   - Suggested technology updates
+   - Integration opportunities
+   - Scalability considerations
+
+5. Implementation Roadmap:
+   - Prioritized improvements
+   - Implementation steps
+   - Risk considerations
+   - Estimated effort levels`,
             },
           ],
         }),
@@ -208,20 +246,45 @@ Please provide a detailed analysis including:
           messages: [
             {
               role: 'system',
-              content: "You are an expert software architect specializing in creating comprehensive development guidelines.",
+              content: "You are an expert software architect specializing in creating comprehensive development guidelines and improvement strategies.",
             },
             {
               role: 'user',
-              content: `Based on this repository analysis, create detailed custom AI instructions:
+              content: `Based on this repository analysis, create detailed enhancement and maintenance instructions:
 
 ${analysisText}
 
-Create instructions addressing:
-1. Core Understanding & Business Context
-2. Technical Architecture Guidelines
-3. Development Standards
-4. Future Considerations
-5. Change Management Guidelines`,
+Please provide comprehensive guidelines addressing:
+
+1. Code Quality & Architecture:
+   - Design principles to follow
+   - Code organization standards
+   - Component architecture guidelines
+   - Testing strategy recommendations
+
+2. Technical Improvements:
+   - Performance optimization steps
+   - Security enhancement measures
+   - Scalability considerations
+   - Modernization opportunities
+
+3. Development Workflow:
+   - Code review guidelines
+   - Documentation requirements
+   - CI/CD pipeline suggestions
+   - Quality assurance processes
+
+4. Maintenance Strategy:
+   - Technical debt management
+   - Dependency update procedures
+   - Code health monitoring
+   - Performance tracking
+
+5. Future-Proofing:
+   - Technology upgrade paths
+   - Scalability preparations
+   - Security hardening steps
+   - Modernization roadmap`,
             },
           ],
         }),
