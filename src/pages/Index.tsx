@@ -1,5 +1,6 @@
 
 import { GithubAnalyzer } from "@/components/GithubAnalyzer";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const Index = () => {
   return (
@@ -13,6 +14,7 @@ const Index = () => {
           </div>
         </div>
       </div>
+      <ScrollToTop />
     </div>
   );
 };
