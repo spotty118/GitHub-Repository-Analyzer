@@ -157,7 +157,7 @@ export const GithubAnalyzer = () => {
       };
 
       const modelConfig = provider === "openai" 
-        ? { model: "o3-mini" }
+        ? { model: "gpt-3.5-turbo" }
         : { model: useModelOverride ? selectedModel : 'openrouter/auto' };
 
       const analysisResponse = await fetch(endpoint, {
@@ -190,7 +190,8 @@ Please provide a detailed analysis including:
       });
 
       if (!analysisResponse.ok) {
-        throw new Error("Failed to analyze repository");
+        const errorData = await analysisResponse.json().catch(() => ({}));
+        throw new Error(`Failed to analyze repository: ${errorData.error?.message || analysisResponse.statusText}`);
       }
 
       const analysisData = await analysisResponse.json();
@@ -225,7 +226,8 @@ Create instructions addressing:
       });
 
       if (!instructionsResponse.ok) {
-        throw new Error("Failed to generate custom instructions");
+        const errorData = await instructionsResponse.json().catch(() => ({}));
+        throw new Error(`Failed to generate custom instructions: ${errorData.error?.message || instructionsResponse.statusText}`);
       }
 
       const instructionsData = await instructionsResponse.json();
