@@ -32,6 +32,9 @@ const OPENROUTER_MODELS = [{
   value: "anthropic/claude-3.7-sonnet",
   label: "Claude 3.7 Sonnet"
 }, {
+  value: "anthropic/claude-3.7-sonnet:thinking",
+  label: "Claude 3.7 Sonnet (Thinking)"
+}, {
   value: "anthropic/claude-3.5-sonnet",
   label: "Claude 3.5 Sonnet"
 }, {
