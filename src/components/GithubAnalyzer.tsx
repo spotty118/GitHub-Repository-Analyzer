@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info, Code2, Link2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,9 @@ const OPENROUTER_MODELS = [{
 }, {
   value: "openai/o1-mini-2024-09-12",
   label: "O1 Mini"
+}, {
+  value: "anthropic/claude-3.7-sonnet",
+  label: "Claude 3.7 Sonnet"
 }, {
   value: "anthropic/claude-3.5-sonnet",
   label: "Claude 3.5 Sonnet"
