@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 const OPENROUTER_MODELS = [{
   value: "openai/gpt-4o-2024-08-06",
   label: "GPT-4 Turbo (Aug 2024)"
@@ -103,6 +105,7 @@ export const GithubAnalyzer = () => {
   const [customInstructions, setCustomInstructions] = useState<string>("");
   const [aiRole, setAiRole] = useState<string>(DEFAULT_AI_ROLE);
   const [provider, setProvider] = useState<"openai" | "openrouter">("openrouter");
+  const [apiError, setApiError] = useState<Error | null>(null);
   const {
     toast
   } = useToast();
@@ -162,6 +165,14 @@ export const GithubAnalyzer = () => {
       description: "API key removed successfully"
     });
   };
+  
+  const resetAnalysisState = () => {
+    setApiError(null);
+    setFileStructure("");
+    setAnalysis("");
+    setCustomInstructions("");
+  };
+  
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isKeySet || !repoUrl) {
@@ -173,53 +184,106 @@ export const GithubAnalyzer = () => {
       return;
     }
     setIsLoading(true);
-    setFileStructure("");
-    setAnalysis("");
-    setCustomInstructions("");
+    resetAnalysisState();
+    
     try {
       const {
         owner,
         repo
       } = extractRepoInfo(repoUrl);
+      
+      // Fetch repository structure
+      const repoStructure = await fetchRepositoryStructure(owner, repo);
+      setFileStructure(repoStructure);
+      
+      // First API call for analysis
+      const analysisText = await generateAnalysis(owner, repo, repoStructure);
+      setAnalysis(analysisText);
+      
+      // Second API call for instructions
+      const instructions = await generateInstructions(owner, repo);
+      setCustomInstructions(instructions);
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Repository analyzed successfully"
+      });
+    } catch (error) {
+      console.error("Analysis error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Analysis failed";
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      
+      setApiError(error instanceof Error ? error : new Error(errorMessage));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const fetchRepositoryStructure = async (owner: string, repo: string): Promise<string> => {
+    try {
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
-      let structure;
+      
       if (!response.ok) {
+        // Try with master branch if main doesn't exist
         const masterResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`);
+        
         if (!masterResponse.ok) {
           throw new Error("Failed to fetch repository data");
         }
+        
         const data = await masterResponse.json();
-        structure = data.tree.filter((item: any) => item.type === "blob").map((item: any) => item.path).join('\n');
-      } else {
-        const data = await response.json();
-        structure = data.tree.filter((item: any) => item.type === "blob").map((item: any) => item.path).join('\n');
+        return data.tree
+          .filter((item: any) => item.type === "blob")
+          .map((item: any) => item.path)
+          .join('\n');
       }
-      setFileStructure(structure);
-      const endpoint = provider === "openai" ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        ...(provider === "openrouter" && {
-          'HTTP-Referer': window.location.origin
-        })
-      };
-      const modelConfig = provider === "openai" ? {
-        model: "gpt-4o"
-      } : {
-        model: useModelOverride ? selectedModel : 'openrouter/auto'
-      };
-      console.log('Using model config:', modelConfig);
-      const analysisResponse = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          ...modelConfig,
-          messages: [{
-            role: 'system',
-            content: "You are performing a technical code review. Focus on architecture patterns, code organization, and technical recommendations. Be concise and direct."
-          }, {
-            role: 'user',
-            content: `${owner}/${repo}
+      
+      const data = await response.json();
+      return data.tree
+        .filter((item: any) => item.type === "blob")
+        .map((item: any) => item.path)
+        .join('\n');
+    } catch (error) {
+      console.error("Error fetching repository structure:", error);
+      throw error;
+    }
+  };
+  
+  const generateAnalysis = async (owner: string, repo: string, structure: string): Promise<string> => {
+    const endpoint = provider === "openai" ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      ...(provider === "openrouter" && {
+        'HTTP-Referer': window.location.origin
+      })
+    };
+    
+    const modelConfig = provider === "openai" ? {
+      model: "gpt-4o"
+    } : {
+      model: useModelOverride ? selectedModel : 'openrouter/auto'
+    };
+    
+    console.log('Using model config:', modelConfig);
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...modelConfig,
+        messages: [{
+          role: 'system',
+          content: aiRole
+        }, {
+          role: 'user',
+          content: `${owner}/${repo}
 
 ${structure}
 
@@ -229,25 +293,47 @@ Analyze with focus on:
 3. Technical Stack
 4. Dependencies
 5. Enhancement Points`
-          }]
-        })
-      });
-      if (!analysisResponse.ok) {
-        throw new Error(`Analysis failed: ${analysisResponse.statusText}`);
-      }
-      const analysisData = await analysisResponse.json();
-      setAnalysis(analysisData.choices[0].message.content);
-      const instructionsResponse = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          ...modelConfig,
-          messages: [{
-            role: 'system',
-            content: "Generate IDE-compatible development guidelines based on the codebase analysis."
-          }, {
-            role: 'user',
-            content: `Based on ${owner}/${repo} analysis:
+        }]
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Analysis failed: ${response.statusText}. ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+  
+  const generateInstructions = async (owner: string, repo: string): Promise<string> => {
+    const endpoint = provider === "openai" ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      ...(provider === "openrouter" && {
+        'HTTP-Referer': window.location.origin
+      })
+    };
+    
+    const modelConfig = provider === "openai" ? {
+      model: "gpt-4o"
+    } : {
+      model: useModelOverride ? selectedModel : 'openrouter/auto'
+    };
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...modelConfig,
+        messages: [{
+          role: 'system',
+          content: "Generate IDE-compatible development guidelines based on the codebase analysis."
+        }, {
+          role: 'user',
+          content: `Based on ${owner}/${repo} analysis:
 
 Generate development guidelines for IDE AI assistance:
 1. Architecture patterns to follow
@@ -255,31 +341,19 @@ Generate development guidelines for IDE AI assistance:
 3. Testing requirements
 4. Performance considerations
 5. Security requirements`
-          }]
-        })
-      });
-      if (!instructionsResponse.ok) {
-        throw new Error(`Guidelines generation failed: ${instructionsResponse.statusText}`);
-      }
-      const instructionsData = await instructionsResponse.json();
-      setCustomInstructions(instructionsData.choices[0].message.content);
-      toast({
-        title: "Analysis Complete",
-        description: "Repository analyzed successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Analysis failed",
-        variant: "destructive"
-      });
-      setAnalysis("");
-      setFileStructure("");
-      setCustomInstructions("");
-    } finally {
-      setIsLoading(false);
+        }]
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Guidelines generation failed: ${response.statusText}. ${errorText}`);
     }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
   };
+  
   const handleCopy = () => {
     if (analysis) {
       navigator.clipboard.writeText(analysis);
@@ -289,6 +363,7 @@ Generate development guidelines for IDE AI assistance:
       });
     }
   };
+  
   const handleExport = () => {
     if (analysis) {
       const blob = new Blob([analysis], {
@@ -308,7 +383,14 @@ Generate development guidelines for IDE AI assistance:
       });
     }
   };
-  return <div className="min-h-screen bg-background p-8">
+  
+  // Reset the error state when trying again
+  const handleResetError = () => {
+    setApiError(null);
+  };
+  
+  return (
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-center text-foreground">
           GitHub Repository Analyzer
@@ -412,11 +494,25 @@ Generate development guidelines for IDE AI assistance:
               </div>
               
               <div className="relative h-[400px] bg-muted rounded-lg">
-                <div className="absolute inset-0 p-4 overflow-y-auto">
-                  {isLoading ? <p className="text-muted-foreground">Analyzing repository...</p> : analysis ? <pre className="whitespace-pre-wrap text-sm">{analysis}</pre> : <p className="text-muted-foreground">
-                      Analysis results will appear here...
-                    </p>}
-                </div>
+                <ErrorBoundary onReset={handleResetError}>
+                  <div className="absolute inset-0 p-4 overflow-y-auto">
+                    {apiError ? (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertDescription>
+                          {apiError.message}
+                        </AlertDescription>
+                      </Alert>
+                    ) : isLoading ? (
+                      <p className="text-muted-foreground">Analyzing repository...</p>
+                    ) : analysis ? (
+                      <pre className="whitespace-pre-wrap text-sm">{analysis}</pre>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Analysis results will appear here...
+                      </p>
+                    )}
+                  </div>
+                </ErrorBoundary>
               </div>
             </div>
           </Card>
@@ -430,11 +526,19 @@ Generate development guidelines for IDE AI assistance:
                 <h2 className="text-xl font-semibold">File Structure</h2>
               </div>
               <div className="relative h-[400px] bg-muted rounded-lg">
-                <div className="absolute inset-0 p-4 overflow-y-auto">
-                  {isLoading ? <p className="text-muted-foreground">Loading repository structure...</p> : fileStructure ? <pre className="whitespace-pre font-mono text-sm">{fileStructure}</pre> : <p className="text-muted-foreground">
-                      Repository structure will appear here...
-                    </p>}
-                </div>
+                <ErrorBoundary>
+                  <div className="absolute inset-0 p-4 overflow-y-auto">
+                    {isLoading ? (
+                      <p className="text-muted-foreground">Loading repository structure...</p>
+                    ) : fileStructure ? (
+                      <pre className="whitespace-pre font-mono text-sm">{fileStructure}</pre>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Repository structure will appear here...
+                      </p>
+                    )}
+                  </div>
+                </ErrorBoundary>
               </div>
             </div>
           </Card>
@@ -459,15 +563,24 @@ Generate development guidelines for IDE AI assistance:
                 </Button>
               </div>
               <div className="relative h-[400px] bg-muted rounded-lg">
-                <div className="absolute inset-0 p-4 overflow-y-auto">
-                  {isLoading ? <p className="text-muted-foreground">Generating custom instructions...</p> : customInstructions ? <pre className="whitespace-pre-wrap text-sm">{customInstructions}</pre> : <p className="text-muted-foreground">
-                      AI-generated custom instructions will appear here...
-                    </p>}
-                </div>
+                <ErrorBoundary>
+                  <div className="absolute inset-0 p-4 overflow-y-auto">
+                    {isLoading ? (
+                      <p className="text-muted-foreground">Generating custom instructions...</p>
+                    ) : customInstructions ? (
+                      <pre className="whitespace-pre-wrap text-sm">{customInstructions}</pre>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        AI-generated custom instructions will appear here...
+                      </p>
+                    )}
+                  </div>
+                </ErrorBoundary>
               </div>
             </div>
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
