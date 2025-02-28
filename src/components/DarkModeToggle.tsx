@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,25 +9,16 @@ export function DarkModeToggle() {
     (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   );
 
-  // Apply theme efficiently using requestAnimationFrame to avoid forced reflow/repaint issues
-  const applyTheme = useCallback((dark: boolean) => {
-    // Use requestAnimationFrame to optimize DOM updates
-    requestAnimationFrame(() => {
-      // Update classList directly for better performance
-      if (dark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      
-      // Update localStorage (outside the rAF to not block animations)
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
-    });
-  }, []);
-
-  // Initial theme application on component mount
+  // Direct DOM manipulation for instant theme switching
   useEffect(() => {
-    applyTheme(isDarkMode);
+    // Set initial theme
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    }
     
     // Also listen to system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -35,18 +26,35 @@ export function DarkModeToggle() {
       if (localStorage.getItem('theme') === null) {
         // Only auto-switch if user hasn't set a preference
         setIsDarkMode(e.matches);
-        applyTheme(e.matches);
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
       }
     };
     
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [applyTheme]);
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    applyTheme(newMode);
+    
+    // Direct and immediate DOM updates
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    }
+    
+    // Update localStorage
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
   return (
@@ -55,7 +63,7 @@ export function DarkModeToggle() {
         <TooltipTrigger asChild>
           <Button 
             onClick={toggleTheme}
-            className="rounded-full hover:bg-accent hover:text-accent-foreground will-change-transform"
+            className="rounded-full hover:bg-accent hover:text-accent-foreground"
           >
             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             <span className="sr-only">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>

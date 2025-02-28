@@ -2,16 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Performance-optimized dark mode transitions */
+/* No transitions for theme changes - instant switching */
 :root {
   color-scheme: light;
-  /* Only transition specific properties for better performance */
-  @apply transition-[background-color,color,border-color] duration-150;
-}
-
-.dark {
-  color-scheme: dark;
-}
+ }
 
 /* Animations */
 @keyframes fadeIn {
@@ -127,11 +121,6 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-  /* Apply transitions only to the specific elements that need them */
-  button, a, input, select, textarea, 
-  .card, .alert, .tab, .progress, .tooltip {
-    @apply transition-[background-color,color,border-color,box-shadow] duration-150;
   }
 }
 
