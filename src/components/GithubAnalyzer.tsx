@@ -15,6 +15,8 @@ import { exportMarkdown, exportText } from "@/services/sharing-service";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ShareButton } from "@/components/ShareButton";
 import { cn } from "@/lib/utils";
+import { CacheManager } from "@/components/CacheManager";
+import { RepoStats, GitHubResponse, GitHubTreeResponse, GitHubContentResponse, GitHubTreeItem } from "@/types/github";
 import { SearchHistory } from "./SearchHistory";
 
 const OPENROUTER_MODELS = [{
@@ -100,59 +102,15 @@ Link Self-Awareness:
 - Monitor import/export patterns
 - Evaluate code coupling`;
 
-interface GitHubTreeItem {
-  type: string;
-  path: string;
-}
-
-interface GitHubResponse {
-  stargazers_count: number;
-  forks_count: number;
-  watchers_count: number;
-  default_branch: string;
-  open_issues_count: number;
-  language: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface GitHubTreeResponse {
-  tree: GitHubTreeItem[];
-}
-
-interface GitHubContentResponse {
-  content: string;
-  encoding: string;
-}
-
 interface AIModelResponse {
-  choices: Array<{
+  choices: {
     message: { content: string };
-  }>;
+  }[];
 }
+// Import the cache service
+import { cacheService } from "@/services/cache-service";
 
-// Repository statistics interface
-interface RepoStats {
-  stars: number;
-  forks: number;
-  watchers: number;
-  defaultBranch: string;
-  openIssues: number;
-  language: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
-type CachedData = RepoStats | GitHubTreeResponse | GitHubContentResponse;
-
-// Cache entry type for better type safety
-interface CacheEntry<T extends CachedData> {
-  data: T;
-  timestamp: number;
-}
-
-// Cache storage for API responses
-const apiCache = new Map<string, CacheEntry<CachedData>>();
 
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
@@ -174,11 +132,6 @@ export const GithubAnalyzer = () => {
   // Memoize expensive model options
   const sortedModels = useMemo(() => {
     return [...OPENROUTER_MODELS].sort((a, b) => a.label.localeCompare(b.label));
-  }, []);
-  
-  // Cache helper functions
-  const getCacheKey = useCallback((owner: string, repo: string, endpoint: string) => {
-    return `${owner}/${repo}/${endpoint}`;
   }, []);
   
   const [repoStats, setRepoStats] = useState<RepoStats | null>(null);
@@ -296,10 +249,6 @@ export const GithubAnalyzer = () => {
     setRepoUrl(url);
   }, []);
   
-  const isValidCache = (timestamp: number) => {
-    return Date.now() - timestamp < 5 * 60 * 1000; // 5 minutes cache
-  };
-
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isKeySet || !repoUrl) {
@@ -322,6 +271,9 @@ export const GithubAnalyzer = () => {
       }
 
       const { owner, repo } = extractRepoInfo(repoUrl);
+      
+      // Add URL components to search history if it's not already there
+      const { owner: repoOwner, repo: repoName } = extractRepoInfo(repoUrl);
       
       // Fetch repository metadata
       setProgressStage("Fetching repository information");
@@ -378,13 +330,11 @@ export const GithubAnalyzer = () => {
   const fetchRepositoryStats = async (owner: string, repo: string): Promise<RepoStats> => {
     try {
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-      const cacheKey = getCacheKey(owner, repo, "stats");
+      const cacheKey = cacheService.getCacheKey(owner, repo, "stats");
       
       // Check cache first
-      const cached = apiCache.get(cacheKey);
-      if (cached && isValidCache(cached.timestamp)) {
-        return cached.data as RepoStats;
-      }
+      const cachedStats = cacheService.getCache<RepoStats>(cacheKey);
+      if (cachedStats) return cachedStats;
       
       if (!response.ok) {
         throw new Error(`Failed to fetch repository stats: ${response.statusText}`);
@@ -408,10 +358,7 @@ export const GithubAnalyzer = () => {
       };
       
       // Cache the result
-      apiCache.set(cacheKey, {
-        data: stats,
-        timestamp: Date.now()
-      });
+      cacheService.setCache(cacheKey, stats);
       
       return stats;
     } catch (error) {
@@ -423,6 +370,12 @@ export const GithubAnalyzer = () => {
   const fetchRepositoryStructure = async (owner: string, repo: string, defaultBranch: string): Promise<string> => {
     try {
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`);
+      const cacheKey = cacheService.getCacheKey(owner, repo, `structure-${defaultBranch}`);
+      
+      // Check cache first
+      const cachedStructure = cacheService.getCache<GitHubTreeResponse>(cacheKey);
+      if (cachedStructure) 
+        return cachedStructure.tree.filter(item => item.type === "blob").map(item => item.path).join('\n');
       
       if (!response.ok) {
         // Try with master branch if specified branch doesn't exist
@@ -440,6 +393,9 @@ export const GithubAnalyzer = () => {
       }
       
       const data = await response.json() as GitHubTreeResponse;
+      
+      // Cache the result
+      cacheService.setCache(cacheKey, data);
       return (data.tree as GitHubTreeItem[])
         .filter(item => item.type === "blob")
         .map(item => item.path)
@@ -454,6 +410,12 @@ export const GithubAnalyzer = () => {
   const fetchCodeSnippets = async (owner: string, repo: string, branch: string): Promise<string> => {
     try {
       // Array of important files to check (expand as needed)
+      const cacheKey = cacheService.getCacheKey(owner, repo, `snippets-${branch}`);
+      
+      // Check cache for code snippets using the specialized string cache method
+      const cachedSnippets = cacheService.getCacheString(cacheKey);
+      if (cachedSnippets) return cachedSnippets;
+
       const importantFiles = [
         "package.json",
         "README.md",
@@ -506,6 +468,9 @@ export const GithubAnalyzer = () => {
       if (snippets.trim() === "") {
         return "No key files found or accessible in this repository.";
       }
+      
+      // Cache the result
+      cacheService.setCacheString(cacheKey, snippets);
       
       return snippets;
     } catch (error) {
@@ -991,6 +956,13 @@ Generate development guidelines for IDE AI assistance:
                 </div>
               </div>
             </div>
+          </Card>
+        )}
+
+        {repoStats && (
+          <Card className="p-6 mt-4">
+            {/* Add Cache Manager when a repository has been analyzed */}
+            <CacheManager repoOwner={extractRepoInfo(repoUrl).owner} repoName={extractRepoInfo(repoUrl).repo} />
           </Card>
         )}
       </div>
