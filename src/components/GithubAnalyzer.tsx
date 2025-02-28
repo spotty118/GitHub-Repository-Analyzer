@@ -10,8 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
+import { SearchHistory } from "@/components/SearchHistory";
+import { ShareButton } from "@/components/ShareButton";
+import { cn } from "@/lib/utils";
 
 const OPENROUTER_MODELS = [{
   value: "openai/gpt-4o-2024-08-06",
@@ -127,6 +132,9 @@ export const GithubAnalyzer = () => {
   const [activeTab, setActiveTab] = useState("analysis");
   const [codeSnippets, setCodeSnippets] = useState<string>("");
   
+  // Modern UI states
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  
   const { toast } = useToast();
   
   useEffect(() => {
@@ -143,6 +151,12 @@ export const GithubAnalyzer = () => {
     } else {
       setIsKeySet(false);
       setApiKey("");
+    }
+
+    // Load search history
+    const savedHistory = localStorage.getItem('repoSearchHistory');
+    if (savedHistory) {
+      setSearchHistory(JSON.parse(savedHistory));
     }
   }, [provider]);
   
@@ -213,6 +227,13 @@ export const GithubAnalyzer = () => {
     }
     setIsLoading(true);
     resetAnalysisState();
+    
+    // Add to search history if not already there
+    if (!searchHistory.includes(repoUrl)) {
+      const updatedHistory = [repoUrl, ...searchHistory].slice(0, 5); // Keep last 5 searches
+      setSearchHistory(updatedHistory);
+      localStorage.setItem('repoSearchHistory', JSON.stringify(updatedHistory));
+    }
     
     try {
       const { owner, repo } = extractRepoInfo(repoUrl);
@@ -576,12 +597,17 @@ Generate development guidelines for IDE AI assistance:
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col items-center space-y-2">
+        <div className="flex flex-col items-center space-y-2 relative">
           <h1 className="text-4xl font-bold text-center text-foreground">
-          GitHub Repository Analyzer
+            GitHub Repository Analyzer
           </h1>
+          
+          <div className="absolute top-0 right-0">
+            <DarkModeToggle />
+          </div>
+          
           {repoStats && (
-            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-4 text-sm text-muted-foreground animate-fadeIn">
               <span className="flex items-center"><Star className="w-4 h-4 mr-1" /> {repoStats.stars}</span>
               <span className="flex items-center"><GitBranch className="w-4 h-4 mr-1" /> {repoStats.forks}</span>
               <span className="flex items-center"><FileCode className="w-4 h-4 mr-1" /> {repoStats.language}</span>
@@ -590,7 +616,7 @@ Generate development guidelines for IDE AI assistance:
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="p-6">
+          <Card className="p-6 transition-all duration-300 hover:shadow-md">
             <div className="flex flex-col gap-4">
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
@@ -615,7 +641,7 @@ Generate development guidelines for IDE AI assistance:
                       Save Key
                     </Button>
                   ) : (
-                    <Button type="button" onClick={handleRemoveKey} className="hover:text-destructive">
+                    <Button type="button" onClick={handleRemoveKey}>
                       Remove Key
                     </Button>
                   )}
@@ -665,8 +691,17 @@ Generate development guidelines for IDE AI assistance:
                   <h2 className="text-xl font-semibold">Repository Input</h2>
                 </div>
                 
-                <form onSubmit={handleAnalyze} className="flex space-x-2">
-                  <Input placeholder="Enter GitHub repository URL" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} className="flex-1" />
+                <form onSubmit={handleAnalyze} className="flex space-x-2 relative">
+                  <div className="relative flex-1">
+                    <SearchHistory history={searchHistory} onSelect={setRepoUrl} />
+                    <Input 
+                      placeholder="Enter GitHub repository URL" 
+                      value={repoUrl} 
+                      onChange={e => setRepoUrl(e.target.value)} 
+                      className={cn("flex-1", searchHistory.length > 0 && "pl-10")}
+                    />
+                  </div>
+                  
                   <Button type="submit" className="bg-mint hover:bg-mint-light text-white" disabled={!isKeySet || isLoading}>
                     {isLoading ? "Analyzing..." : "Analyze"}
                   </Button>
@@ -675,15 +710,15 @@ Generate development guidelines for IDE AI assistance:
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 transition-all duration-300 hover:shadow-md">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-full space-y-6 py-12">
+              <div className="flex flex-col items-center justify-center h-full space-y-6 py-12 animate-slideInUp">
                 <div className="flex items-center space-x-2">
                   <LoaderCircle className="w-5 h-5 animate-spin text-mint" />
                   <p className="text-lg font-medium">{progressStage || "Analyzing repository..."}</p>
                 </div>
                 <div className="w-full max-w-md">
-                  <Progress value={progressPercent} className="h-2" />
+                  <Progress value={progressPercent} className="h-2 animate-pulse-custom" />
                   <p className="text-xs text-right mt-1 text-muted-foreground">{progressPercent}%</p>
                 </div>
               </div>
@@ -700,31 +735,66 @@ Generate development guidelines for IDE AI assistance:
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Analysis Results</h2>
                     <div className="flex space-x-2">
-                      <Button 
-                        onClick={handleCopy} 
-                        className="hover:text-mint"
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              onClick={handleCopy} 
+                              className="hover:text-mint"
+                              disabled={!analysis}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Copy to clipboard</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              onClick={handleExport} 
+                              className="hover:text-mint"
+                              disabled={!analysis}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Export as text</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              onClick={handleMarkdownExport}
+                              className="hover:text-mint"
+                              disabled={!analysis}
+                            >
+                              <Link2 className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Export as markdown</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <ShareButton 
+                        title={`GitHub Analysis for ${repoUrl}`}
+                        text={`Check out this analysis of ${repoUrl}`}
                         disabled={!analysis}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        onClick={handleExport} 
-                        className="hover:text-mint"
-                        disabled={!analysis}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        onClick={handleMarkdownExport}
-                        className="hover:text-mint"
-                        disabled={!analysis}
-                      >
-                        <Link2 className="w-4 h-4" />
-                      </Button>
+                      />
                     </div>
                   </div>
                   
-                  <div className="relative h-[400px] bg-muted rounded-lg">
+                  <div className="relative h-[400px] bg-muted rounded-lg transition-all duration-300">
                     <ErrorBoundary onReset={handleResetError}>
                       <div className="absolute inset-0 p-4 overflow-y-auto">
                         {apiError ? (
@@ -734,11 +804,17 @@ Generate development guidelines for IDE AI assistance:
                             </AlertDescription>
                           </Alert>
                         ) : analysis ? (
-                          <pre className="whitespace-pre-wrap text-sm">{analysis}</pre>
+                          <pre className="whitespace-pre-wrap text-sm animate-fadeIn">{analysis}</pre>
                         ) : (
-                          <p className="text-muted-foreground">
-                            Analysis results will appear here...
-                          </p>
+                          <div>
+                            <div className="skeleton h-6 w-2/3 mb-2"></div>
+                            <div className="skeleton h-6 w-3/4 mb-2"></div>
+                            <div className="skeleton h-6 w-1/2 mb-2"></div>
+                            <div className="skeleton h-6 w-5/6"></div>
+                            <p className="text-muted-foreground mt-4">
+                              Analysis results will appear here...
+                            </p>
+                          </div>
                         )}
                       </div>
                     </ErrorBoundary>
@@ -751,23 +827,32 @@ Generate development guidelines for IDE AI assistance:
                       <MessageSquare className="w-5 h-5 text-mint" />
                       <h2 className="text-xl font-semibold">Development Guidelines</h2>
                     </div>
-                    <Button 
-                      onClick={() => {
-                        if (customInstructions) {
-                          navigator.clipboard.writeText(customInstructions);
-                          toast({
-                            title: "Copied!",
-                            description: "Custom instructions copied to clipboard"
-                          });
-                        }
-                      }} 
-                      className="hover:text-mint" 
-                      disabled={!customInstructions}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            onClick={() => {
+                              if (customInstructions) {
+                                navigator.clipboard.writeText(customInstructions);
+                                toast({
+                                  title: "Copied!",
+                                  description: "Custom instructions copied to clipboard"
+                                });
+                              }
+                            }} 
+                            className="hover:text-mint" 
+                            disabled={!customInstructions}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy to clipboard</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <div className="relative h-[400px] bg-muted rounded-lg">
+                  <div className="relative h-[400px] bg-muted rounded-lg transition-all duration-300">
                     <ErrorBoundary>
                       <div className="absolute inset-0 p-4 overflow-y-auto">
                         {apiError ? (
@@ -777,11 +862,17 @@ Generate development guidelines for IDE AI assistance:
                             </AlertDescription>
                           </Alert>
                         ) : customInstructions ? (
-                          <pre className="whitespace-pre-wrap text-sm">{customInstructions}</pre>
+                          <pre className="whitespace-pre-wrap text-sm animate-fadeIn">{customInstructions}</pre>
                         ) : (
-                          <p className="text-muted-foreground">
-                            AI-generated development guidelines will appear here...
-                          </p>
+                          <div>
+                            <div className="skeleton h-6 w-2/3 mb-2"></div>
+                            <div className="skeleton h-6 w-3/4 mb-2"></div>
+                            <div className="skeleton h-6 w-1/2 mb-2"></div>
+                            <div className="skeleton h-6 w-5/6"></div>
+                            <p className="text-muted-foreground mt-4">
+                              AI-generated development guidelines will appear here...
+                            </p>
+                          </div>
                         )}
                       </div>
                     </ErrorBoundary>
@@ -793,7 +884,7 @@ Generate development guidelines for IDE AI assistance:
                     <FolderTree className="w-5 h-5 text-mint" />
                     <h2 className="text-xl font-semibold">File Structure</h2>
                   </div>
-                  <div className="relative h-[400px] bg-muted rounded-lg">
+                  <div className="relative h-[400px] bg-muted rounded-lg transition-all duration-300">
                     <ErrorBoundary>
                       <div className="absolute inset-0 p-4 overflow-y-auto">
                         {apiError ? (
@@ -803,11 +894,17 @@ Generate development guidelines for IDE AI assistance:
                             </AlertDescription>
                           </Alert>
                         ) : fileStructure ? (
-                          <pre className="whitespace-pre font-mono text-sm">{fileStructure}</pre>
+                          <pre className="whitespace-pre font-mono text-sm animate-fadeIn">{fileStructure}</pre>
                         ) : (
-                          <p className="text-muted-foreground">
-                            Repository structure will appear here...
-                          </p>
+                          <div>
+                            <div className="skeleton h-6 w-2/3 mb-2"></div>
+                            <div className="skeleton h-6 w-3/4 mb-2"></div>
+                            <div className="skeleton h-6 w-1/2 mb-2"></div>
+                            <div className="skeleton h-6 w-5/6"></div>
+                            <p className="text-muted-foreground mt-4">
+                              Repository structure will appear here...
+                            </p>
+                          </div>
                         )}
                       </div>
                     </ErrorBoundary>
@@ -819,7 +916,7 @@ Generate development guidelines for IDE AI assistance:
                     <Code2 className="w-5 h-5 text-mint" />
                     <h2 className="text-xl font-semibold">Code Snippets</h2>
                   </div>
-                  <div className="relative h-[400px] bg-muted rounded-lg">
+                  <div className="relative h-[400px] bg-muted rounded-lg transition-all duration-300">
                     <ErrorBoundary>
                       <div className="absolute inset-0 p-4 overflow-y-auto">
                         {apiError ? (
@@ -829,11 +926,17 @@ Generate development guidelines for IDE AI assistance:
                             </AlertDescription>
                           </Alert>
                         ) : codeSnippets ? (
-                          <pre className="whitespace-pre-wrap font-mono text-sm">{codeSnippets}</pre>
+                          <pre className="whitespace-pre-wrap font-mono text-sm animate-fadeIn">{codeSnippets}</pre>
                         ) : (
-                          <p className="text-muted-foreground">
-                            Key code snippets will appear here...
-                          </p>
+                          <div>
+                            <div className="skeleton h-6 w-2/3 mb-2"></div>
+                            <div className="skeleton h-6 w-3/4 mb-2"></div>
+                            <div className="skeleton h-6 w-1/2 mb-2"></div>
+                            <div className="skeleton h-6 w-5/6"></div>
+                            <p className="text-muted-foreground mt-4">
+                              Key code snippets will appear here...
+                            </p>
+                          </div>
                         )}
                       </div>
                     </ErrorBoundary>
@@ -845,7 +948,7 @@ Generate development guidelines for IDE AI assistance:
         </div>
         
         {repoStats && (
-          <Card className="p-6">
+          <Card className="p-6 transition-all duration-300 hover:shadow-md animate-slideInUp">
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Repository Information</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -25,6 +25,10 @@ declare module 'lucide-react' {
   export const GitBranch: LucideIcon;
   export const FileCode: LucideIcon;
   export const LoaderCircle: LucideIcon;
+  export const Moon: LucideIcon;
+  export const Sun: LucideIcon;
+  export const History: LucideIcon;
+  export const Share2: LucideIcon;
   
   // Add a general export for all other icons
   export const Icons: Record<string, LucideIcon>;
