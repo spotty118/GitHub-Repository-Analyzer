@@ -100,6 +100,37 @@ Link Self-Awareness:
 - Monitor import/export patterns
 - Evaluate code coupling`;
 
+interface GitHubTreeItem {
+  type: string;
+  path: string;
+}
+
+interface GitHubResponse {
+  stargazers_count: number;
+  forks_count: number;
+  watchers_count: number;
+  default_branch: string;
+  open_issues_count: number;
+  language: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface GitHubTreeResponse {
+  tree: GitHubTreeItem[];
+}
+
+interface GitHubContentResponse {
+  content: string;
+  encoding: string;
+}
+
+interface AIModelResponse {
+  choices: Array<{
+    message: { content: string };
+  }>;
+}
+
 // Repository statistics interface
 interface RepoStats {
   stars: number;
@@ -327,14 +358,15 @@ export const GithubAnalyzer = () => {
         throw new Error(`Failed to fetch repository stats: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as GitHubResponse;
+      
       return {
-        stars: data.stargazers_count,
-        forks: data.forks_count,
-        watchers: data.watchers_count,
-        defaultBranch: data.default_branch,
-        openIssues: data.open_issues_count,
-        language: data.language,
+        stars: data.stargazers_count || 0,
+        forks: data.forks_count || 0,
+        watchers: data.watchers_count || 0,
+        defaultBranch: data.default_branch || 'main',
+        openIssues: data.open_issues_count || 0,
+        language: data.language || 'Unknown',
         createdAt: new Date(data.created_at).toLocaleDateString(),
         updatedAt: new Date(data.updated_at).toLocaleDateString()
       };
@@ -356,17 +388,17 @@ export const GithubAnalyzer = () => {
           throw new Error("Failed to fetch repository data");
         }
         
-        const data = await masterResponse.json();
-        return data.tree
-          .filter((item: any) => item.type === "blob")
-          .map((item: any) => item.path)
+        const data = await masterResponse.json() as GitHubTreeResponse;
+        return (data.tree as GitHubTreeItem[])
+          .filter(item => item.type === "blob")
+          .map(item => item.path)
           .join('\n');
       }
       
-      const data = await response.json();
-      return data.tree
-        .filter((item: any) => item.type === "blob")
-        .map((item: any) => item.path)
+      const data = await response.json() as GitHubTreeResponse;
+      return (data.tree as GitHubTreeItem[])
+        .filter(item => item.type === "blob")
+        .map(item => item.path)
         .join('\n');
     } catch (error) {
       console.error("Error fetching repository structure:", error);
@@ -399,7 +431,7 @@ export const GithubAnalyzer = () => {
           );
           
           if (response.ok) {
-            const data = await response.json();
+            const data = await response.json() as GitHubContentResponse;
             
             // GitHub API returns content as base64 encoded
             if (data.content && data.encoding === "base64") {
@@ -502,7 +534,7 @@ Analyze with focus on:
       }
     }
     
-    const data = await response.json();
+    const data = await response.json() as AIModelResponse;
     return data.choices[0].message.content;
   };
   
@@ -565,7 +597,7 @@ Generate development guidelines for IDE AI assistance:
       }
     }
     
-    const data = await response.json();
+    const data = await response.json() as AIModelResponse;
     return data.choices[0].message.content;
   };
   
