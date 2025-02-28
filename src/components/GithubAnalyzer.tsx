@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Github, FolderTree, Copy, Download, Key, MessageSquare, Info, Code2, Link2, Star, GitBranch, FileCode, LoaderCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -143,6 +143,17 @@ interface RepoStats {
   updatedAt: string;
 }
 
+type CachedData = RepoStats | GitHubTreeResponse | GitHubContentResponse;
+
+// Cache entry type for better type safety
+interface CacheEntry<T extends CachedData> {
+  data: T;
+  timestamp: number;
+}
+
+// Cache storage for API responses
+const apiCache = new Map<string, CacheEntry<CachedData>>();
+
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -160,6 +171,16 @@ export const GithubAnalyzer = () => {
   const [aiRole, setAiRole] = useState<string>(DEFAULT_AI_ROLE);
   const [provider, setProvider] = useState<"openai" | "openrouter">("openrouter");
   const [apiError, setApiError] = useState<Error | null>(null);
+  // Memoize expensive model options
+  const sortedModels = useMemo(() => {
+    return [...OPENROUTER_MODELS].sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
+  
+  // Cache helper functions
+  const getCacheKey = useCallback((owner: string, repo: string, endpoint: string) => {
+    return `${owner}/${repo}/${endpoint}`;
+  }, []);
+  
   const [repoStats, setRepoStats] = useState<RepoStats | null>(null);
   const [activeTab, setActiveTab] = useState("analysis");
   const [codeSnippets, setCodeSnippets] = useState<string>("");
@@ -232,7 +253,7 @@ export const GithubAnalyzer = () => {
     }
   };
   
-  const handleSaveKey = (e: React.FormEvent) => {
+  const handleSaveKey = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey.trim()) {
       toast({
@@ -248,9 +269,9 @@ export const GithubAnalyzer = () => {
       title: "Success",
       description: "API key saved successfully"
     });
-  };
+  }, [apiKey, provider, toast]);
   
-  const handleRemoveKey = () => {
+  const handleRemoveKey = useCallback(() => {
     localStorage.removeItem(`${provider}_key`);
     setApiKey("");
     setIsKeySet(false);
@@ -258,7 +279,7 @@ export const GithubAnalyzer = () => {
       title: "Removed",
       description: "API key removed successfully"
     });
-  };
+  }, [provider, toast]);
   
   const resetAnalysisState = () => {
     setApiError(null);
@@ -271,8 +292,12 @@ export const GithubAnalyzer = () => {
     setCodeSnippets("");
   };
   
-  const handleUrlSelect = (url: string) => {
+  const handleUrlSelect = useCallback((url: string) => {
     setRepoUrl(url);
+  }, []);
+  
+  const isValidCache = (timestamp: number) => {
+    return Date.now() - timestamp < 5 * 60 * 1000; // 5 minutes cache
   };
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -353,6 +378,17 @@ export const GithubAnalyzer = () => {
   const fetchRepositoryStats = async (owner: string, repo: string): Promise<RepoStats> => {
     try {
       const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+      const cacheKey = getCacheKey(owner, repo, "stats");
+      
+      // Check cache first
+      const cached = apiCache.get(cacheKey);
+      if (cached && isValidCache(cached.timestamp)) {
+        return cached.data as RepoStats;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch repository stats: ${response.statusText}`);
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to fetch repository stats: ${response.statusText}`);
@@ -360,7 +396,7 @@ export const GithubAnalyzer = () => {
       
       const data = await response.json() as GitHubResponse;
       
-      return {
+      const stats = {
         stars: data.stargazers_count || 0,
         forks: data.forks_count || 0,
         watchers: data.watchers_count || 0,
@@ -370,6 +406,14 @@ export const GithubAnalyzer = () => {
         createdAt: new Date(data.created_at).toLocaleDateString(),
         updatedAt: new Date(data.updated_at).toLocaleDateString()
       };
+      
+      // Cache the result
+      apiCache.set(cacheKey, {
+        data: stats,
+        timestamp: Date.now()
+      });
+      
+      return stats;
     } catch (error) {
       console.error("Error fetching repository stats:", error);
       throw error;
@@ -470,7 +514,7 @@ export const GithubAnalyzer = () => {
     }
   };
   
-  const generateAnalysis = async (owner: string, repo: string, structure: string, stats: RepoStats): Promise<string> => {
+  const generateAnalysis = useCallback(async (owner: string, repo: string, structure: string, stats: RepoStats): Promise<string> => {
     const endpoint = provider === "openai" ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
     
     const headers = {
@@ -536,7 +580,7 @@ Analyze with focus on:
     
     const data = await response.json() as AIModelResponse;
     return data.choices[0].message.content;
-  };
+  }, [apiKey, provider, aiRole, selectedModel, useModelOverride, toast]);
   
   const generateInstructions = async (owner: string, repo: string, snippets: string): Promise<string> => {
     const endpoint = provider === "openai" ? 'https://api.openai.com/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
@@ -601,7 +645,7 @@ Generate development guidelines for IDE AI assistance:
     return data.choices[0].message.content;
   };
   
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     if (analysis) {
       navigator.clipboard.writeText(analysis);
       toast({
@@ -609,9 +653,9 @@ Generate development guidelines for IDE AI assistance:
         description: "Analysis copied to clipboard"
       });
     }
-  };
+  }, [analysis, toast]);
   
-  const handleMarkdownExport = () => {
+  const handleMarkdownExport = useCallback(() => {
     if (analysis) {
       exportMarkdown(repoUrl, analysis, customInstructions, repoStats);
       toast({
@@ -619,9 +663,9 @@ Generate development guidelines for IDE AI assistance:
         description: "Analysis exported as markdown file"
       });
     }
-  };
+  }, [analysis, customInstructions, repoStats, repoUrl, toast]);
   
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (analysis) {
       exportText(repoUrl, analysis);
       toast({
@@ -629,7 +673,7 @@ Generate development guidelines for IDE AI assistance:
         description: "Analysis exported as text file"
       });
     }
-  };
+  }, [analysis, repoUrl, toast]);
   
   // Reset the error state when trying again
   const handleResetError = () => {
@@ -696,7 +740,7 @@ Generate development guidelines for IDE AI assistance:
                             <SelectValue placeholder="Select a model" />
                           </SelectTrigger>
                           <SelectContent>
-                            {OPENROUTER_MODELS.map(model => <SelectItem key={model.value} value={model.value}>
+                            {sortedModels.map(model => <SelectItem key={model.value} value={model.value}>
                                 {model.label}
                               </SelectItem>)}
                           </SelectContent>
