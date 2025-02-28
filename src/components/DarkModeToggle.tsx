@@ -63,7 +63,7 @@ export function DarkModeToggle() {
         <TooltipTrigger asChild>
           <Button 
             onClick={toggleTheme}
-            className="rounded-full hover:bg-accent hover:text-accent-foreground"
+            className="rounded-full"
           >
             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             <span className="sr-only">{isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}</span>
