@@ -11,7 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { exportMarkdown, exportText } from "@/services/sharing-service";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ShareButton } from "@/components/ShareButton";
+import { cn } from "@/lib/utils";
+import { SearchHistory } from "./SearchHistory";
 
 const OPENROUTER_MODELS = [{
   value: "openai/gpt-4o-2024-08-06",
@@ -110,6 +114,8 @@ interface RepoStats {
 
 export const GithubAnalyzer = () => {
   const [repoUrl, setRepoUrl] = useState("");
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+
   const [analysis, setAnalysis] = useState<string>("");
   const [apiKey, setApiKey] = useState("");
   const [isKeySet, setIsKeySet] = useState(false);
@@ -134,6 +140,39 @@ export const GithubAnalyzer = () => {
       setUseModelOverride(false);
     }
   }, [provider]);
+
+  // Load search history from local storage
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('repoSearchHistory');
+    if (savedHistory) {
+      try {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed)) {
+          setSearchHistory(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse search history:', e);
+      }
+    }
+
+    // Listen for storage events (for search history updates from other components)
+    const handleStorageChange = () => {
+      const updatedHistory = localStorage.getItem('repoSearchHistory');
+      if (updatedHistory) {
+        try {
+          const parsed = JSON.parse(updatedHistory);
+          if (Array.isArray(parsed)) {
+            setSearchHistory(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to parse updated search history:', e);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
   
   useEffect(() => {
     const savedKey = localStorage.getItem(`${provider}_key`);
@@ -201,6 +240,10 @@ export const GithubAnalyzer = () => {
     setCodeSnippets("");
   };
   
+  const handleUrlSelect = (url: string) => {
+    setRepoUrl(url);
+  };
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isKeySet || !repoUrl) {
@@ -215,6 +258,13 @@ export const GithubAnalyzer = () => {
     resetAnalysisState();
     
     try {
+      // Add URL to search history if it's not already there
+      if (!searchHistory.includes(repoUrl)) {
+        const newHistory = [repoUrl, ...searchHistory.filter(url => url !== repoUrl)].slice(0, 10);
+        setSearchHistory(newHistory);
+        localStorage.setItem('repoSearchHistory', JSON.stringify(newHistory));
+      }
+
       const { owner, repo } = extractRepoInfo(repoUrl);
       
       // Fetch repository metadata
@@ -531,16 +581,7 @@ Generate development guidelines for IDE AI assistance:
   
   const handleMarkdownExport = () => {
     if (analysis) {
-      const markdownContent = `# GitHub Repository Analysis for ${repoUrl}\n\n## Analysis\n\n${analysis}\n\n## Development Guidelines\n\n${customInstructions}\n\n## Repository Stats\n\n${repoStats ? `- Stars: ${repoStats.stars}\n- Forks: ${repoStats.forks}\n- Language: ${repoStats.language}\n- Updated: ${repoStats.updatedAt}` : 'No stats available'}`;
-      const blob = new Blob([markdownContent], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "github-analysis.md";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      exportMarkdown(repoUrl, analysis, customInstructions, repoStats);
       toast({
         title: "Exported!",
         description: "Analysis exported as markdown file"
@@ -550,17 +591,7 @@ Generate development guidelines for IDE AI assistance:
   
   const handleExport = () => {
     if (analysis) {
-      const blob = new Blob([analysis], {
-        type: "text/plain"
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "github-analysis.txt";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      exportText(repoUrl, analysis);
       toast({
         title: "Exported!",
         description: "Analysis exported as text file"
@@ -665,9 +696,26 @@ Generate development guidelines for IDE AI assistance:
                   <h2 className="text-xl font-semibold">Repository Input</h2>
                 </div>
                 
-                <form onSubmit={handleAnalyze} className="flex space-x-2">
-                  <Input placeholder="Enter GitHub repository URL" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} className="flex-1" />
-                  <Button type="submit" className="bg-mint hover:bg-mint-light text-white" disabled={!isKeySet || isLoading}>
+                <form onSubmit={handleAnalyze} className="flex space-x-2 relative">
+                  <div className="relative flex-1">
+                    <Input 
+                      placeholder="Enter GitHub repository URL" 
+                      value={repoUrl} 
+                      onChange={e => setRepoUrl(e.target.value)} 
+                      className={cn("flex-1", searchHistory.length > 0 && "pl-10")}
+                    />
+                    {searchHistory.length > 0 && (
+                      <SearchHistory 
+                        history={searchHistory} 
+                        onSelect={handleUrlSelect} 
+                      />
+                    )}
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="bg-mint hover:bg-mint-light text-white" 
+                    disabled={!isKeySet || isLoading}
+                  >
                     {isLoading ? "Analyzing..." : "Analyze"}
                   </Button>
                 </form>

@@ -24,6 +24,11 @@ declare module 'lucide-react' {
   export const Star: LucideIcon;
   export const GitBranch: LucideIcon;
   export const FileCode: LucideIcon;
+  export const Share2: LucideIcon; // Added Share2 icon
+  export const Sun: LucideIcon;
+  export const Moon: LucideIcon;
+  export const Clock: LucideIcon;
+  export const X: LucideIcon;
   export const LoaderCircle: LucideIcon;
   
   // Add a general export for all other icons
